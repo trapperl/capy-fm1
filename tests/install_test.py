@@ -169,7 +169,7 @@ def package(product="FM-1_900", marker=True, size=0x2000, damage=False, blocks=2
     return bytes(raw)
 
 
-TMP = Path(tempfile.mkdtemp(prefix="wren-install-"))
+TMP = Path(tempfile.mkdtemp(prefix="capy-install-"))
 
 
 def pkgfile(name, raw):

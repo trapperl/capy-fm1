@@ -1,4 +1,4 @@
-# A tour of Wren: note and chord names, the wave, the band, a recording with a layer, the arp, save, home.
+# A tour of Capy: note and chord names, the wave, the band, a recording with a layer, the arp, save, home.
 # buttons: 0 OCT- 1 OCT+ 2 FX 3 SEL 4 ENV 5 LFO 6 EDIT 7 GLO 8 HOME 9 SAVE 10 ARP 11 SEQ 12 PLAY 13 REC
 # encoders: 0 SELECT 1 ALGORITHM 2..5 KNOB1..4 6 PRESETS      keys: bit k, 0 = F3 (C4 = 0x80)
 200 keys 0x80

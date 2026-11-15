@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* Wren: a first real instrument for a child of five to seven, on the M-VAVE FM-1.
+/* Capy: a first real instrument for a child of five to seven, on the M-VAVE FM-1.
  *
  * What it holds to:
  *   1. She is the musician. Nothing plays unless she plays it or switched it on: her own recording (REC / PLAY)
@@ -31,8 +31,8 @@
  *
  * Built on Dinghy (zvenson) and its platform (Felucca by Leo Kuroshita, with SLOOP's changes): platform.c and below.
  * Integers only: no float, no 64-bit division (docs/RULES.md). tests/host.c runs this file on a computer. */
-#define APP_NAME "WREN"
-#define STORE_MAGIC 0x4E455257u                 /* "WREN": never another firmware's data */
+#define APP_NAME "CAPY"
+#define STORE_MAGIC 0x4E455257u                 /* never another firmware's data ("WREN", its first name: kept, so what she saved stays) */
 static void app_idle(void);
 #define LCD_IDLE app_idle                       /* while the screen's DMA runs: the clock and MIDI */
 #include "platform.c"
@@ -1348,7 +1348,7 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
     been = 1;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
-    if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);   /* (hello: which Wren this is) */
+    if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, APP_NAME " " APP_VER, C_GREY, 1);   /* (hello: which build this is) */
     for (i = 0; i < 4u; i++) (void)fm1_enc_take(POND_ENC[i]);   /* (turns from before the pond don't close it) */
     (void)fm1_enc_take(ENC_PRESETS); (void)fm1_enc_take(ENC_SELECT); (void)fm1_enc_take(ENC_ALGORITHM);
     while (!fm1_in.notes && !(fm1_in.buttons & ~octs)) {

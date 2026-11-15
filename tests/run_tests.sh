@@ -20,8 +20,8 @@ run() { echo "== $1"; shift; "$@" || fail=1; }
 
 run "FM-1 app on the host: the default script plays, screens and sound" sh tests/run_host.sh
 run "SMK-37 app on the host: the default script" env BOARD=smk37 sh tests/run_host.sh
-run "Wren: a tour of every button and knob (tests/scripts/tour.txt)" sh tests/run_host.sh tests/scripts/tour.txt
-run "Wren: the games (tests/scripts/games.txt)" sh tests/run_host.sh tests/scripts/games.txt
+run "Capy: a tour of every button and knob (tests/scripts/tour.txt)" sh tests/run_host.sh tests/scripts/tour.txt
+run "Capy: the games (tests/scripts/games.txt)" sh tests/run_host.sh tests/scripts/games.txt
 run "FM-1 MIDI: USB, the TRS jack, a clock, the channel" sh tests/run_host.sh tests/scripts/midi.txt
 run "SMK-37: velocity, a pad, an outer key, the pitch wheel" env BOARD=smk37 sh tests/run_host.sh tests/scripts/smk37.txt
 
@@ -32,7 +32,7 @@ run "SMK-37 pitch wheel: the bend is back to 0 at rest, however slowly the wheel
 
 $CC -o "$OUT/ota_test" tests/ota_test.c
 run "M-UPGRADE entry (FM-1)" "$OUT/ota_test" build/wren.fwsc
-head -c 60000 build/wren.bin > "$OUT/old_app.bin"
+head -c 60000 build/capy.bin > "$OUT/old_app.bin"
 python3 tools/fm1pkg_make.py "$OUT/old_app.bin" build/loader/ota.bin "$OUT/old.fwsc" >/dev/null
 $CC -o "$OUT/ldr_screen_test" tests/ldr_screen_test.c
 run "update loader's screen (from Skiff): UPDATE MODE, WRITING and its bar, UPDATE FAILED" "$OUT/ldr_screen_test" "$OUT"
@@ -41,7 +41,7 @@ run "update loader (FM-1): other app -> this build" "$OUT/ldr_test" "$OUT/old.fw
 
 # SMK-37: the OTA staging and the loader windows on SMK-layout packages (made here from the FM-1 binaries: only the
 # layout and the protocol are under test), then the real SMK packages
-python3 tools/fm1pkg_make.py --board smk37 build/wren.bin build/loader/ota.bin "$OUT/smk_new.fwsc" >/dev/null
+python3 tools/fm1pkg_make.py --board smk37 build/capy.bin build/loader/ota.bin "$OUT/smk_new.fwsc" >/dev/null
 python3 tools/fm1pkg_make.py --board smk37 "$OUT/old_app.bin" build/loader/ota.bin "$OUT/smk_old.fwsc" >/dev/null
 run "SMK-37 package layout (fm1pkg_make --board smk37): PRCT 0x9D000, stock region table" \
     python3 tests/smk_pkg_test.py "$OUT/smk_new.fwsc" "SMK-37 Pro_900"

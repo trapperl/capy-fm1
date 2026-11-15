@@ -1,8 +1,8 @@
 # Licensing
 
-Wren is built on [Dinghy](https://github.com/zvenson/dinghy) (commit ea1b6bf): the app `firmware/src/wren.c`, `tests/scripts/tour.txt`,
-`README.md` and `docs/MANUAL.md` are Wren's own, GPL-3.0-only; everything else is Dinghy's, unchanged but for the names
-of the build outputs and the package identity. The tunes in `wren.c` are traditional melodies written out note by note.
+Capy is built on [Dinghy](https://github.com/zvenson/dinghy) (commit ea1b6bf): the app `firmware/src/capy.c`, `tests/scripts/tour.txt`,
+`README.md` and `docs/MANUAL.md` are Capy's own, GPL-3.0-only; everything else is Dinghy's, unchanged but for the names
+of the build outputs and the package identity. The tunes in `capy.c` are traditional melodies written out note by note.
 What follows is Dinghy's licensing text, which applies to all of it.
 
 Dinghy is free software under the GNU General Public License, version 3 only (`GPL-3.0-only`, full text in

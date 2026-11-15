@@ -1,8 +1,8 @@
-# Wren
+# Capy
 
 **A first real instrument for a child of five to seven, on the M-VAVE FM-1.**
 
-Wren replaces the FM-1's firmware with a small keyboard instrument. What it holds to:
+Capy replaces the FM-1's firmware with a small keyboard instrument. What it holds to:
 
 1. **She is the musician.** Nothing plays unless she plays it or switched it on: her own recording, and a band she
    starts and plays over. No demo songs.
@@ -30,10 +30,11 @@ levels gained in the games, another baby moves in, up to five.
 <img src="docs/pond.gif" width="160" alt="The pond and its scenes">
 </p>
 
-> **Status: 0.2, not yet run on a real FM-1.** Everything here was checked in the host simulator
-> (`tests/run_host.sh`), which runs the same code and writes the screen and the sound to files. The device package
-> is built by GitHub Actions, where the build's own safety checks pass. Install the first build with a computer
-> nearby and read [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first. Installing firmware is at your own risk.
+> **Status: runs on an FM-1.** Each change is checked in the host simulator (`tests/run_host.sh`), which runs the
+> same code and writes the screen and the sound to files, and then tried on one FM-1. The device package is built
+> by GitHub Actions, where the build's own safety checks pass. Install it with a computer nearby and read
+> [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first. Installing firmware is at your own risk. (Capy was
+> first called Wren; a wren still visits the pond.)
 
 ## Playing
 
@@ -78,11 +79,11 @@ More in the [manual](docs/MANUAL.md).
 
 ## Build it
 
-Wren is built on [Dinghy](https://github.com/zvenson/dinghy), which carries
+Capy is built on [Dinghy](https://github.com/zvenson/dinghy), which carries
 [Felucca](https://github.com/hugelton/Felucca)'s platform: the updater, the USB rescue, USB-MIDI, USB audio.
 
 ```sh
-tests/run_host.sh tests/scripts/tour.txt    # no FM-1 needed: build/host/wren.wav and the screens as PNG
+tests/run_host.sh tests/scripts/tour.txt    # no FM-1 needed: build/host/capy.wav and the screens as PNG
 ```
 
 For the FM-1 itself you need Linux on x86-64, Python 3 with Pillow, JieLi's toolchain and its AC79 SDK:
@@ -99,11 +100,11 @@ python3 tools/fm1_install.py build/wren.fwsc      # over USB; asks before it wri
 Or let GitHub build it: every push to `main` runs `.github/workflows/release.yml` and keeps `wren.fwsc` as a build
 artifact; a tag `v0.1` publishes a release.
 
-The instrument is one file, [firmware/src/wren.c](firmware/src/wren.c). The platform's calls are in
+The instrument is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in
 [docs/API.md](docs/API.md), the chip's rules in [docs/RULES.md](docs/RULES.md).
 
 ## Licence
 
 GPL-3.0-only, as Dinghy and Felucca. Credits and third-party parts: [LICENSING.md](LICENSING.md).
 
-M-VAVE and FM-1 are trademarks of their owners. Wren is independent of M-VAVE, Hügelton Instruments and Dinghy.
+M-VAVE and FM-1 are trademarks of their owners. Capy is independent of M-VAVE, Hügelton Instruments and Dinghy.

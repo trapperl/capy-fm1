@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* A fake FM-1 (or SMK-37) on a computer: the app (firmware/src/wren.c) runs unchanged on it. platform.c includes
+/* A fake FM-1 (or SMK-37) on a computer: the app (firmware/src/capy.c) runs unchanged on it. platform.c includes
  * this file instead of the hardware when DINGHY_HOST is set. A script presses keys over time; out come
  * the screen (PPM, at the times SHOT asks) and the sound (WAV, as the FM-1 sends it over USB).
  *
  *   mkdir -p build/host
- *   cc -O2 -Wall -DDINGHY_HOST -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/wren firmware/src/wren.c
- *   build/host/wren build/host/wren        (-> build/host/wren.wav, build/host/wren-<ms>.ppm)
- *   build/host/wren OUT script.txt [FPS]    (your own script; with FPS: OUT-NNNNN.ppm, a frame every 1/FPS s:
+ *   cc -O2 -Wall -DDINGHY_HOST -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/capy firmware/src/capy.c
+ *   build/host/capy build/host/capy        (-> build/host/capy.wav, build/host/capy-<ms>.ppm)
+ *   build/host/capy OUT script.txt [FPS]    (your own script; with FPS: OUT-NNNNN.ppm, a frame every 1/FPS s:
  *                                             a film of your firmware, e.g. ffmpeg -r 30 -i OUT-%05d.ppm ...)
  *   tests/run_host.sh [script] does it all (BOARD=smk37: the SMK-37 build); DINGHY_PERF=1: instructions per sample
  *
@@ -220,7 +220,7 @@ static void read_script(const char *path)
     script_n = n;
 }
 
-static const char *host_out = "build/host/wren";
+static const char *host_out = "build/host/capy";
 static int16_t *wav;
 static uint32_t wav_n;
 

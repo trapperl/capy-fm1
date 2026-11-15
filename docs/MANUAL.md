@@ -1,4 +1,4 @@
-# Wren: the manual
+# Capy: the manual
 
 For the grown-up who hands it over. The child needs none of this.
 
@@ -11,14 +11,14 @@ For the grown-up who hands it over. The child needs none of this.
    - `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py wren.fwsc`. It asks before it writes.
    - Or use a browser installer that takes a `.fwsc` file, such as the
      [FM-1 Firmware Hub](https://thefirmwarehub.com), in Chrome or Edge.
-4. Don't unplug it while it writes. The FM-1 restarts into Wren.
+4. Don't unplug it while it writes. The FM-1 restarts into Capy.
 
-**Going back:** install M-VAVE's own V15 package the same way, or with M-VAVE's M-UPGRADE app. Wren answers the
+**Going back:** install M-VAVE's own V15 package the same way, or with M-VAVE's M-UPGRADE app. Capy answers the
 installers like the other community firmwares.
 
 ## If it goes wrong
 
-- **Wren crashes:** a red screen shows where, then the FM-1 restarts. If it crashes twice while starting, it goes
+- **Capy crashes:** a red screen shows where, then the FM-1 restarts. If it crashes twice while starting, it goes
   to the USB rescue by itself.
 - **It won't start:** hold **OCT-** while switching on. That is the USB rescue: no sound, only the updater. Install
   another build or the stock firmware from there.
@@ -26,8 +26,7 @@ installers like the other community firmwares.
   ([FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter)) or the tools listed under "Firmware update
   and recovery" in [awesome-fm-1](https://github.com/cicloid/awesome-fm-1).
 
-Wren 0.2 has only been run in the simulator. Do the first install yourself, with the computer at hand, before the
-FM-1 is wrapped up as a present.
+Do the first install yourself, with the computer at hand, before the FM-1 is wrapped up as a present.
 
 ## Before you hand it over
 
