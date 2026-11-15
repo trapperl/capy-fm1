@@ -15,7 +15,9 @@ Wren replaces the FM-1's firmware with a small keyboard instrument. What it hold
 
 A capybara and her baby sit beside the instrument's name. She sings when notes sound, nods to the band, blinks,
 and gets a yuzu on her head for a chord or a right answer (a right answer also makes every key's light breathe once, without
-a sound over hers). HOME (and switching on) shows their pond, which stays until she plays or picks something: every three
+a sound over hers). HOME (and switching on) shows their pond, which stays until she plays or picks something. Little scenes play
+there one after the other (a baby jumps into the water, rides on her mother's back, a wren lands and sings, the
+mother dozes off, yuzus drop in for a bath), and OCT- and OCT+ step through them. In the pond: every three
 levels gained in the games, another baby moves in, up to five.
 
 <p>
@@ -25,7 +27,7 @@ levels gained in the games, another baby moves in, up to five.
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
-<img src="docs/pond.gif" width="160" alt="The pond, moving">
+<img src="docs/pond.gif" width="160" alt="The pond and its scenes">
 </p>
 
 > **Status: 0.2, not yet run on a real FM-1.** Everything here was checked in the host simulator
@@ -53,7 +55,7 @@ levels gained in the games, another baby moves in, up to five.
 | **EDIT** | Tap: take the last layer away. Hold a second: erase the recording. |
 | **SAVE** | Keep the recording for next time. |
 | **SEL** | The games. |
-| **HOME** | Back to the start: piano, everything off, and a look at the pond. The recording is kept. |
+| **HOME** | Back to the start: piano, everything off, and the pond, where OCT- and OCT+ step through its scenes. The recording is kept. |
 | **MASTER** | Volume. |
 | **HOME held 3 s** | For grown-ups: QUIET, half the loudness, kept over power-off. |
 

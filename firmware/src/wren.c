@@ -1089,7 +1089,7 @@ static const char *const CAPY[20] = {
     "..bbb.bbb....bbb.bbb....",
     "..ddd.ddd....ddd.ddd....",
 };
-enum { CAPY_SING = 1, CAPY_BLINK = 2, CAPY_YUZU = 4, CAPY_UP = 8 };
+enum { CAPY_SING = 1, CAPY_BLINK = 2, CAPY_YUZU = 4, CAPY_UP = 8, CAPY_FLIP = 16, CAPY_STEP_A = 32, CAPY_STEP_B = 64 };   /* FLIP: she looks left; STEP: two feet off the ground */
 static void capy_px(int cv, int32_t x, int32_t y, int32_t s, uint16_t c)
 {
     if (cv) cv_rect(x, y, s, s, c);
@@ -1103,13 +1103,16 @@ static void draw_capy(int cv, int32_t x, int32_t y, int32_t s, uint32_t f, uint3
             char ch = CAPY[r][c];
             uint16_t col;
             if (ch == '.') continue;
+            int32_t cx = f & CAPY_FLIP ? 23 - (int32_t)c : (int32_t)c;
             if ((ch == 'o' || ch == 'g') && !(f & CAPY_YUZU)) continue;
+            if (r >= 18u && f & CAPY_STEP_A && ((c >= 2u && c <= 4u) || (c >= 17u && c <= 19u))) continue;
+            if (r >= 18u && f & CAPY_STEP_B && ((c >= 6u && c <= 8u) || (c >= 13u && c <= 15u))) continue;
             col = ch == 'b' ? RGB(176, 124, 72) : ch == 'd' ? RGB(104, 68, 40) : ch == 'n' ? RGB(60, 40, 30)
                 : ch == 'o' ? RGB(255, 170, 30) : ch == 'g' ? RGB(70, 190, 70)
                 : ch == 'e' ? (f & CAPY_BLINK ? RGB(104, 68, 40) : C_BLACK)
                 : f & CAPY_SING ? RGB(60, 20, 20) : RGB(104, 68, 40);          /* m: the mouth, open when she sings */
-            capy_px(cv, x + (int32_t)c * s, y + (int32_t)r * s - (f & CAPY_UP ? s : 0), s, col);
-            if (ch == 'm' && f & CAPY_SING) capy_px(cv, x + (int32_t)c * s, y + (int32_t)(r + 1u) * s - (f & CAPY_UP ? s : 0), s, col);
+            capy_px(cv, x + cx * s, y + (int32_t)r * s - (f & CAPY_UP ? s : 0), s, col);
+            if (ch == 'm' && f & CAPY_SING) capy_px(cv, x + cx * s, y + (int32_t)(r + 1u) * s - (f & CAPY_UP ? s : 0), s, col);
         }
 }
 static void draw_top(const char *name, uint16_t col, uint32_t f)   /* the instrument or the game, and the capybara */
@@ -1131,39 +1134,225 @@ static uint32_t babies(void)
     return 1u + (ups / 3u > 4u ? 4u : ups / 3u);
 }
 static const int16_t SPOT[5][2] = {{128, 104}, {96, 170}, {182, 110}, {150, 184}, {46, 186}};   /* land, pond, land, pond, pond */
-static void draw_pond(const char *title)
+
+/* The pond is alive: below the title the whole picture is drawn again every 50 ms, into the canvas in three strips
+ * (cv_oy), so nothing flickers. It plays short scenes one after the other, each a function of its time t (ms):
+ * the first baby is their actor, the others blink and bob as always. OCT- and OCT+ step through the scenes. */
+#define POND_Y 58
+#define POND_H 61                               /* a strip (the canvas holds 64 rows): three of them reach the bottom */
+#define C_GRASS RGB(24, 70, 34)
+#define C_WATER RGB(40, 120, 200)
+#define C_RIPPLE RGB(110, 190, 240)
+#define C_YUZU RGB(255, 170, 30)
+#define C_LEAF RGB(70, 190, 70)
+enum { SC_CALM, SC_SPLASH, SC_RIDE, SC_WREN, SC_NAP, SC_BATH, NSCENE };
+static const uint16_t SC_MS[NSCENE] = {5000, 9000, 8000, 8000, 8000, 9000};
+
+static int32_t ramp(int32_t a, int32_t b, int32_t t, int32_t t0, int32_t t1)   /* a until t0, b from t1, a line between */
 {
-    uint32_t i, n = babies();
-    int32_t dy;
-    lcd_fill(0, 0, 240, 240, C_BLACK);
-    draw_text_box(0, 8, 240, &FONT_L, title, RGB(255, 170, 30), 1);
-    lcd_fill(0, 138, 240, 102, RGB(24, 70, 34));                    /* the grass */
-    for (dy = -30; dy <= 30; dy++) {                                /* the pond: an ellipse, row by row */
-        int32_t w = 0, q = 900 - dy * dy;
-        while ((w + 1) * (w + 1) <= q) w++;                         /* sqrt(30^2 - dy^2) */
-        w = w * 108 / 30;
-        lcd_fill((uint32_t)(120 - w), (uint32_t)(196 + dy), (uint32_t)(2 * w), 1, dy == -30 || dy % 11 == 9 ? RGB(110, 190, 240) : RGB(40, 120, 200));
-    }
-    draw_capy(0, 14, 62, 4, CAPY_YUZU, 20);                         /* the mother */
-    for (i = 0; i < n; i++) {
-        int pond = i == 1u || i >= 3u;
-        draw_capy(0, SPOT[i][0], SPOT[i][1], 2, 0, pond ? 12u : 20u);
-        if (pond) lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)SPOT[i][1] + 24u, 52, 2, RGB(110, 190, 240));   /* a ripple */
-    }
-    lcd_fill(112, 214, 8, 8, RGB(255, 170, 30));                    /* a yuzu in the water */
-    lcd_fill(114, 212, 2, 2, RGB(70, 190, 70));
+    return t <= t0 ? a : t >= t1 ? b : a + (b - a) * (t - t0) / (t1 - t0);
 }
+static int32_t arc(int32_t h, int32_t t, int32_t t0, int32_t t1)   /* a hop: 0 at t0 and t1, h halfway */
+{
+    int32_t u;
+    if (t <= t0 || t >= t1) return 0;
+    u = (t - t0) * 256 / (t1 - t0);
+    return h * 4 * u * (256 - u) / 65536;
+}
+static int32_t wave(uint32_t t, uint32_t period, int32_t amp)   /* -amp .. amp .. -amp, round and round */
+{
+    int32_t v = (int32_t)(t % period * 4u) * amp / (int32_t)period;
+    return v < 2 * amp ? v - amp : 3 * amp - v;
+}
+static uint32_t stepf(int32_t t) { return (t / 120) & 1 ? CAPY_STEP_A : CAPY_STEP_B; }   /* walking: the feet in turn */
+static void yuzu_at(int32_t x, int32_t y)
+{
+    cv_rect(x, y, 8, 8, C_YUZU);
+    cv_rect(x + 2, y - 2, 2, 2, C_LEAF);
+}
+static void drops(int32_t x, int32_t y, int32_t t, int32_t t0, int32_t n, int32_t spread, int32_t up)   /* water thrown up at t0 */
+{
+    int32_t i, u = t - t0;
+    if (u < 0 || u > 700) return;
+    for (i = 0; i < n; i++)
+        cv_rect(x + (2 * i - n + 1) * spread * u / 700 / n, y - arc(up + i % 3 * 6, u, 0, 700), 3, 3, C_RIPPLE);
+}
+/* the wren: t tail, w wing, h head, b back, c belly, e eye, y beak, l legs. [0] the wing up, [1] down */
+static const char *const BIRD[2][6] = {
+    {"t...hh..", "tw.hheyy", ".bbbbb..", ".bbccc..", "..bcc...", "...l.l.."},
+    {"t...hh..", "t..hheyy", ".bbbbb..", "wwbccc..", "..bcc...", "...l.l.."},
+};
+static void bird_at(int32_t x, int32_t y, uint32_t wing, int flip)
+{
+    int32_t r, c;
+    for (r = 0; r < 6; r++)
+        for (c = 0; c < 8; c++) {
+            char ch = BIRD[wing & 1u][r][c];
+            if (ch == '.') continue;
+            cv_rect(x + (flip ? 7 - c : c) * 3, y + r * 3, 3, 3,
+                    ch == 'c' ? RGB(235, 205, 165) : ch == 'e' ? C_BLACK : ch == 'y' ? RGB(245, 195, 60)
+                    : ch == 'l' || ch == 'w' || ch == 't' ? RGB(100, 62, 34) : RGB(160, 104, 58));
+        }
+}
+static void note_at(int32_t x, int32_t y)       /* a little note, as she sings */
+{
+    cv_rect(x, y + 8, 5, 4, C_WHITE);
+    cv_rect(x + 4, y, 1, 9, C_WHITE);
+    cv_rect(x + 5, y, 3, 2, C_WHITE);
+}
+static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* the picture at t of scene sc, into the canvas */
+{
+    static uint8_t pw[61];                      /* the pond's half width, row by row */
+    static const int16_t BX[5] = {40, 84, 150, 190, 118}, BY[5] = {192, 206, 204, 190, 214};   /* the bath's yuzus */
+    uint32_t f = now / 300u, i, mf = CAPY_YUZU | (f % 7u == 4u ? CAPY_BLINK : 0u), bf = f % 6u == 3u ? CAPY_BLINK : 0u;
+    int32_t dy, k, bx = SPOT[0][0], by = SPOT[0][1], my = 62, wet = 0;
+    int32_t px = 0, py = 0, bird = 0, wing = 0, pflip = 0;
+    if (!pw[30])
+        for (dy = -30; dy <= 30; dy++) {
+            int32_t w = 0, q = 900 - dy * dy;
+            while ((w + 1) * (w + 1) <= q) w++;     /* sqrt(30^2 - dy^2) */
+            pw[dy + 30] = (uint8_t)(w * 108 / 30);
+        }
+    cv_rect(0, 138, 240, 102, C_GRASS);
+    for (dy = -30; dy <= 30; dy++)              /* the pond, its ripples drifting */
+        cv_rect(120 - pw[dy + 30], 196 + dy, 2 * pw[dy + 30], 1,
+                dy == -30 || ((uint32_t)(dy + 30) + 11u - now / 500u % 11u) % 11u == 0u ? C_RIPPLE : C_WATER);
+    if (sc != SC_BATH) yuzu_at(116 + wave(now, 9000, 60), 212 + wave(now, 1300, 1));   /* a yuzu drifts in the water */
+
+    switch (sc) {
+    case SC_SPLASH:                             /* she runs to the pond, jumps in, swims, climbs out and shakes */
+        if (t < 1800) {
+            bx = ramp(128, 142, t, 600, 1800); by = ramp(104, 120, t, 600, 1800);
+            if (t > 600) bf |= stepf(t);
+        } else if (t < 2400) {
+            bx = ramp(142, 128, t, 1800, 2400); by = ramp(120, 176, t, 1800, 2400) - arc(34, t, 1800, 2400);
+        } else if (t < 6200) {
+            wet = 1;
+            bx = 100 - wave((uint32_t)(t - 2400), 3800, 28); by = 176 + ((t / 300) & 1 ? 2 : 0);
+            if (t < 4300) bf |= CAPY_FLIP;
+        } else if (t < 7000) {
+            wet = t < 6600;
+            bx = ramp(128, 142, t, 6200, 7000); by = ramp(176, 120, t, 6200, 7000);
+        } else if (t < 8200) {
+            bx = 142 + ((t / 70) & 1 ? 2 : -2); by = 120;
+        } else {
+            bx = ramp(142, 128, t, 8200, 9000); by = ramp(120, 104, t, 8200, 9000);
+            bf |= CAPY_FLIP | stepf(t);
+        }
+        break;
+    case SC_RIDE:                               /* she hops onto her mother's back for a ride */
+        if (t < 1200) {
+            bx = ramp(128, 112, t, 500, 1200);
+            bf |= CAPY_FLIP | (t > 500 ? stepf(t) : 0u);
+        } else if (t < 2200) {
+            bx = ramp(112, 26, t, 1200, 2200); by = ramp(104, 60, t, 1200, 2200) - arc(22, t, 1200, 2200);
+            bf |= CAPY_FLIP;
+        } else if (t < 6500) {
+            bx = 26; by = 60 + ((t / 600) & 1); my += (t / 600) & 1;
+            if ((t / 1100) & 1) mf |= CAPY_BLINK;   /* (her eyes close: this is nice) */
+        } else if (t < 7400) {
+            bx = ramp(26, 112, t, 6500, 7400); by = ramp(60, 104, t, 6500, 7400) - arc(22, t, 6500, 7400);
+        } else {
+            bx = ramp(112, 128, t, 7400, 8000);
+            bf |= stepf(t);
+        }
+        break;
+    case SC_WREN:                               /* a wren lands on her back and sings */
+        bird = 1;
+        if (t < 2000) {
+            px = ramp(244, 22, t, 0, 2000); py = ramp(64, 83, t, 0, 2000) + wave((uint32_t)t, 500, 5);
+            wing = (t / 120) & 1; pflip = 1;
+        } else if (t < 6000) {
+            px = 22; py = 83 - arc(8, t, 2600, 2900) - arc(8, t, 3200, 3500); wing = 1;
+            if (t < 2300) mf |= CAPY_UP;        /* (oh!) */
+            by -= arc(7, t, 3700, 4000) + arc(7, t, 4500, 4800);
+        } else {
+            px = ramp(22, -30, t, 6000, 8000); py = ramp(83, 60, t, 6000, 8000) + wave((uint32_t)t, 500, 5);
+            wing = (t / 120) & 1; pflip = 1;
+        }
+        break;
+    case SC_NAP:                                /* the mother dozes off; the baby tiptoes over and wakes her */
+        if (t >= 800 && t < 5200) { mf |= CAPY_BLINK; my += (t / 800) & 1; }
+        if (t >= 5200 && t < 5500) mf = (mf & ~(uint32_t)CAPY_BLINK) | CAPY_UP;
+        if (t < 6200) {
+            bx = ramp(128, 116, t, 2500, 4500);
+            bf |= CAPY_FLIP | (t > 2500 && t < 4500 ? (t / 300) & 1 ? CAPY_STEP_A : CAPY_STEP_B : 0u);
+            by -= arc(14, t, 4500, 4850) + arc(14, t, 4850, 5200) + arc(10, t, 5300, 5600) + arc(10, t, 5700, 6000);
+        } else {
+            bx = ramp(116, 128, t, 6200, 7000);
+            if (t < 7000) bf |= stepf(t);
+        }
+        break;
+    case SC_BATH:                               /* yuzus drop into the water, one after the other: a yuzu bath */
+        for (k = 0; k < 5; k++) by -= arc(8, t, 1100 + k * 1300, 1400 + k * 1300);
+        break;
+    default:
+        break;
+    }
+
+    draw_capy(1, 14, my, 4, mf, 20);            /* the mother */
+    for (i = 1; i < n; i++) {                   /* the other babies: they blink, the swimmers bob, each in its own time */
+        uint32_t blink = (f + 2u * i) % 6u == 3u ? CAPY_BLINK : 0u;
+        if (i == 1u || i >= 3u) {
+            int32_t y = SPOT[i][1] + ((f + i) & 1u ? 2 : 0);
+            draw_capy(1, SPOT[i][0], y, 2, blink, 12);
+            cv_rect(SPOT[i][0] - 2, y + 24, 52, 2, C_RIPPLE);
+        } else
+            draw_capy(1, SPOT[i][0], SPOT[i][1], 2, blink, 20);
+    }
+    if (wet) {                                  /* the first baby, the scene's actor */
+        draw_capy(1, bx, by, 2, bf, 12);
+        cv_rect(bx - 2, by + 24, 52, 2, C_RIPPLE);
+    } else
+        draw_capy(1, bx, by, 2, bf, 20);
+
+    if (sc == SC_SPLASH) {
+        drops(152, 196, t, 2400, 7, 64, 30);
+        if (t > 2400 && t < 3300) {             /* the ring it leaves */
+            int32_t r = ramp(10, 44, t, 2400, 3300);
+            cv_rect(152 - r - 6, 199, 6, 2, C_RIPPLE);
+            cv_rect(152 + r, 199, 6, 2, C_RIPPLE);
+        }
+        for (k = 0; k < 4; k++) drops(166, 136, t, 7000 + k * 280, 4, 70, 10);
+    }
+    if (bird) {
+        bird_at(px, py, (uint32_t)wing, pflip);
+        for (k = 0; k < 3; k++) {               /* three notes float up */
+            int32_t u = t - 3500 - k * 600;
+            if (u > 0 && u < 1500) note_at(30 + k * 9 + wave((uint32_t)u, 700, 3), 76 - u * 20 / 1500);
+        }
+    }
+    if (sc == SC_NAP)
+        for (k = 0; k < 3; k++) {               /* z z z */
+            int32_t u = t - 800 - k * 700;
+            if (u > 0 && t < 5200) { u %= 2100; cv_text(108 + u * 18 / 2100, 74 - u * 16 / 2100, &FONT_S, "Z", C_TXT); }
+        }
+    if (sc == SC_BATH)
+        for (k = 0; k < 5; k++) {
+            int32_t u = t - 600 - k * 1300;
+            if (u < 0) continue;
+            yuzu_at(BX[k], u < 500 ? ramp(POND_Y, BY[k], u, 0, 500) : BY[k] + wave(now + (uint32_t)k * 400u, 1300, 1));
+            drops(BX[k] + 4, BY[k], u, 500, 4, 26, 12);
+        }
+}
+
 static const uint8_t POND_ENC[4] = {ENC_KNOB1, ENC_KNOB2, ENC_KNOB3, ENC_KNOB4};
 static int32_t pond_presets;                    /* PRESETS turned at the pond: it leaves, and the turn still counts */
-static void pond_show(const char *title)        /* the pond, alive, until a key, a button or a knob: they blink, the swimmers bob */
+static uint32_t pond_b, pond_rel;               /* the button that closed it: the main loop still gets it (not OCT- / OCT+) */
+static void pond_show(const char *title)        /* the pond, until a key, a knob or a button other than OCT- / OCT+ */
 {
-    uint32_t t0 = fm1_ms, frame = 0, i, n = babies();
-    draw_pond(title);
+    static uint8_t scene, been;                 /* each visit begins with the next scene */
+    const uint32_t octs = 1u << BTN_OCT_DOWN | 1u << BTN_OCT_UP;
+    uint32_t start = fm1_ms, t0 = fm1_ms, drawn = 0, n = babies(), was = fm1_in.buttons & octs, i, rel;
+    if (been) scene = (uint8_t)((scene + 1u) % NSCENE);
+    been = 1;
+    lcd_fill(0, 0, 240, 240, C_BLACK);
+    draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
+    if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);   /* (hello: which Wren this is) */
     for (i = 0; i < 4u; i++) (void)fm1_enc_take(POND_ENC[i]);   /* (turns from before the pond don't close it) */
     (void)fm1_enc_take(ENC_PRESETS); (void)fm1_enc_take(ENC_SELECT); (void)fm1_enc_take(ENC_ALGORITHM);
-    if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);   /* (hello: which Wren this is) */
-    while (!fm1_in.notes && !fm1_in.buttons) {
-        uint32_t f = (fm1_ms - t0) / 300u;
+    while (!fm1_in.notes && !(fm1_in.buttons & ~octs)) {
+        uint32_t o = fm1_in.buttons & octs, strip;
         int32_t turned = 0, e;
         platform_poll();
         if ((e = fm1_enc_take(ENC_PRESETS)) != 0) pond_presets += e, turned = 1;
@@ -1171,22 +1360,26 @@ static void pond_show(const char *title)        /* the pond, alive, until a key,
             if (fm1_enc_take(POND_ENC[i])) turned = 1;
         if (fm1_enc_take(ENC_SELECT) | fm1_enc_take(ENC_ALGORITHM)) turned = 1;
         if (turned || midi_in()) break;         /* (a note over MIDI plays, and the pond leaves) */
-        if (f == frame) continue;
-        frame = f;
-        draw_capy(0, 14, 62, 4, CAPY_YUZU | (f % 7u == 4u ? CAPY_BLINK : 0u), 20);
-        for (i = 0; i < n; i++) {
-            int pond = i == 1u || i >= 3u;
-            uint32_t blink = (f + 2u * i) % 6u == 3u ? CAPY_BLINK : 0u;
-            if (pond) {                         /* up and down in the water, each in its own time */
-                int32_t y = SPOT[i][1] + ((f + i) & 1u ? 2 : 0);
-                lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)SPOT[i][1] + 8u, 52, 22, RGB(40, 120, 200));
-                draw_capy(0, SPOT[i][0], y, 2, blink, 12);
-                lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)y + 24u, 52, 2, RGB(110, 190, 240));
-            } else
-                draw_capy(0, SPOT[i][0], SPOT[i][1], 2, blink, 20);
+        if (o & ~was) {                         /* OCT+ the next scene, OCT- the one before */
+            scene = (uint8_t)((scene + (o & 1u << BTN_OCT_UP ? 1u : NSCENE - 1u)) % NSCENE);
+            t0 = fm1_ms;
+            drawn = 0;
+        }
+        was = o;
+        if (fm1_ms - t0 >= SC_MS[scene]) { scene = (uint8_t)((scene + 1u) % NSCENE); t0 = fm1_ms; }
+        if (drawn && fm1_ms - drawn < 50u) continue;
+        drawn = fm1_ms | 1u;
+        for (strip = 0; strip < 3u; strip++) {
+            cv_begin(240, POND_H, C_BLACK);
+            cv_oy = -(int32_t)(POND_Y + POND_H * strip);
+            pond_scene(scene, (int32_t)(fm1_ms - t0), fm1_ms - start, n);
+            cv_oy = 0;
+            cv_blit(0, POND_Y + POND_H * strip);
             platform_poll();
         }
     }
+    pond_b = fm1_input_edges(&rel) & ~octs;     /* (the OCT presses were the pond's) */
+    pond_rel = rel & ~octs;
 }
 
 static void draw_knobs(void)                    /* the four knobs: their names, how far, lit when on */
@@ -1341,7 +1534,9 @@ static void app_main(void)
         click_mute = place && game == G_TAP;
 
         /* ---- the buttons: each does what is printed on it */
-        b = fm1_input_edges(&rel);
+        b = fm1_input_edges(&rel) | pond_b;     /* (and the button that closed the pond) */
+        rel |= pond_rel;
+        pond_b = pond_rel = 0;
         if (place && game == G_HILO) {          /* here OCT- and OCT+ are the answer: lower, higher */
             uint32_t ans = b & (1u << BTN_OCT_DOWN | 1u << BTN_OCT_UP);
             if (ans && g_phase == P_WAIT) {

@@ -74,7 +74,10 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 
 ## The games: the details
 
-- **The pond.** HOME and switching on show the capybaras' pond until she plays a key, presses a button or turns a knob; they blink, and the ones in the water bob. There is one
+- **The pond.** HOME and switching on show the capybaras' pond until she plays a key, presses a button or turns a knob; the
+  buttons OCT- and OCT+ don't close it, they step back and forth through its six scenes (calm, the jump into the
+  water, the ride on her mother's back, the wren, the nap, the yuzu bath), which also follow each other by
+  themselves; each visit starts with the next one. The other babies blink, and the ones in the water bob. There is one
   baby to begin with; every three levels gained, over all the games together, another one moves in, up to five.
   The screen says so when it happens.
 - Every game starts at level 1 and moves up after five right answers; the level is kept over power-off. Nothing
