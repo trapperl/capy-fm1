@@ -14,7 +14,8 @@ Wren replaces the FM-1's firmware with a small keyboard instrument. What it hold
    remember their level. A wrong answer takes nothing away.
 
 A capybara and her baby sit beside the instrument's name. She sings when notes sound, nods to the band, blinks,
-and gets a yuzu on her head for a chord or a right answer. HOME (and switching on) shows their pond: every three
+and gets a yuzu on her head for a chord or a right answer (a right answer also makes every key's light breathe once, without
+a sound over hers). HOME (and switching on) shows their pond: every three
 levels gained in the games, another baby moves in, up to five.
 
 <p>

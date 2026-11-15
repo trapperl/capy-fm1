@@ -308,7 +308,7 @@ static uint8_t cur_patch, band, arp_on, letters = 1, place;   /* place: 0 playin
 static int8_t oct;
 
 static char msg[32];
-static uint32_t msg_until, party_until, yuzu_until, bounce_t;
+static uint32_t msg_until, party_until, yuzu_until, bounce_t, flash_until;
 static void say(const char *s)
 {
     uint32_t i = 0;
@@ -574,7 +574,7 @@ static uint32_t rnd_n(uint32_t n)
 
 /* a cue: the notes a game plays to her (key numbers, 0 = F3; 255 = a drum) */
 static struct { uint16_t t; uint8_t key, dur; } cue[16];
-static uint32_t cue_n, cue_i, cue_t0, cue_off, cue_on = 255, cue_pi, ding_off;
+static uint32_t cue_n, cue_i, cue_t0, cue_off, cue_on = 255, cue_pi;
 static void cue_add(uint32_t t, uint32_t key, uint32_t dur_ms)
 {
     if (cue_n < 16u) { cue[cue_n].t = (uint16_t)t; cue[cue_n].key = (uint8_t)key; cue[cue_n].dur = (uint8_t)(dur_ms / 10u); cue_n++; }
@@ -583,7 +583,6 @@ static void cue_go(uint32_t wait_ms) { cue_i = 0; cue_t0 = fm1_ms + wait_ms; g_p
 static void cue_run(void)
 {
     if (cue_on != 255u && (int32_t)(fm1_ms - cue_off) >= 0) { stop(cue_on, cue_pi, S_CUE); cue_on = 255; }
-    if (ding_off && (int32_t)(fm1_ms - ding_off) >= 0) { stop(84, 2, S_CUE); stop(88, 2, S_CUE); ding_off = 0; }
     if (g_phase != P_CUE || !place) return;
     while (cue_i < cue_n && (int32_t)(fm1_ms - cue_t0) >= (int32_t)cue[cue_i].t) {
         if (cue[cue_i].key == 255u) s_trig++;
@@ -701,13 +700,36 @@ static void game_new(void)                      /* the next question */
     }
     }
 }
+/* A right answer: every key's light breathes once, dim to bright to dim. The rise and fall use the platform's
+ * backlight layer (fm1_led_bg, one pulse a frame of fm1_led_bg_ns), from barely there to about 1/7 of lit, steps
+ * the eye reads as even; the top is plain lit. The pulse is capped there: above the 595's shift the LED tick
+ * waits it out, so a long one would take time from the audio. (The host and the SMK-37 have no such layer: lit
+ * at the top only.) */
+#define BREATH_MS 500u
+static const uint16_t BREATH_NS[16] = {300, 400, 540, 720, 970, 1300, 1740, 2330, 3120, 4180, 5600, 7500, 10000,
+                                       13000, 0, 0};   /* 0 at the top: lit */
+#if !defined(DINGHY_HOST) && !BOARD_SMK37
+static void keys_backlight(uint32_t mask, uint32_t ns)
+{
+    uint32_t p, r;
+    for (p = 0; p < FM1_NCOL; p++)
+        for (r = 1; r < 5u; r++) {
+            int32_t id = FM1_KEYMAP[r][p];
+            if (id >= (int32_t)KEY_LED(0) && id < (int32_t)KEY_LED(27)) {
+                if (mask >> (id - (int32_t)KEY_LED(0)) & 1u) fm1_led_bg[p] |= (uint8_t)(1u << r);
+                else fm1_led_bg[p] &= (uint8_t)~(1u << r);
+            }
+        }
+    fm1_led_bg_ns = (uint16_t)ns;
+}
+#else
+static void keys_backlight(uint32_t mask, uint32_t ns) { (void)mask; (void)ns; }
+#endif
 static uint32_t babies(void);
 static void game_right(void)
 {
     static const char *const YES[4] = {"YES!", "THAT'S IT!", "GOOD EAR!", "RIGHT!"};
-    play(84, 2, S_CUE, 150);                    /* two little bells */
-    play(88, 2, S_CUE, 150);
-    ding_off = fm1_ms + 200u;
+    flash_until = fm1_ms + BREATH_MS;          /* every key breathes once, dim to bright to dim: no sound over hers */
     yuzu_until = fm1_ms + 1500u;
     if (++g_ok >= 5u && set.lvl[game] < GMAX[game]) {
         uint32_t had = babies();
@@ -1171,7 +1193,7 @@ static void app_main(void)
     tick_ms = fm1_ms;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     for (;;) {
-        uint32_t keys, down, up, rel, b, lit = 0, goal = 0, glow = 0;
+        uint32_t keys, down, up, rel, b, lit = 0, goal = 0, glow = 0, top = 0;
         int32_t e;
         platform_poll();
         clock_run();
@@ -1353,8 +1375,22 @@ static void app_main(void)
             glow = 1u << 7 | 1u << 19;          /* C4, C5: to find your way */
         } else
             glow = band ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
+        {
+            static uint32_t breathing;
+            uint32_t left = flash_until - fm1_ms, lvl = 0;
+            if ((int32_t)left > 0 && left <= BREATH_MS) {   /* right: the keys breathe */
+                uint32_t i = (BREATH_MS - left) * 32u / BREATH_MS;
+                lvl = i < 16u ? i : 31u - i;
+                if (BREATH_NS[lvl]) keys_backlight(0x7FFFFFFu, BREATH_NS[lvl]);
+                else keys_backlight(0, 0), top = 0x7FFFFFFu;   /* (the lights only, not the screen) */
+                breathing = 1;
+            } else if (breathing) {
+                keys_backlight(0, 0);
+                breathing = 0;
+            }
+        }
         for (k = 0; k < 27u; k++) {
-            uint32_t on = (lit | goal) >> k & 1u;
+            uint32_t on = (lit | goal | top) >> k & 1u;
             if ((int32_t)(party_until - fm1_ms) > 0) on = k == (fm1_ms >> 5) % 27u;   /* a light runs along the keys */
             fm1_led_key(KEY_LED(k), (int)on);
             fm1_led_key_glow(KEY_LED(k), !on && glow >> k & 1u);
