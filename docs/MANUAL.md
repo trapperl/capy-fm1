@@ -26,7 +26,7 @@ installers like the other community firmwares.
   ([FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter)) or the tools listed under "Firmware update
   and recovery" in [awesome-fm-1](https://github.com/cicloid/awesome-fm-1).
 
-Wren 0.1 has only been run in the simulator. Do the first install yourself, with the computer at hand, before the
+Wren 0.2 has only been run in the simulator. Do the first install yourself, with the computer at hand, before the
 FM-1 is wrapped up as a present.
 
 ## Before you hand it over
@@ -39,39 +39,46 @@ FM-1 is wrapped up as a present.
 ## The first five minutes
 
 1. Switch it on. It says PIANO and waits. Nothing plays by itself.
-2. Play the keys. The line above the keyboard is what the sound looks like.
+2. Play a key: the screen says its letter. Play C, E and G together: it says C MAJOR.
 3. Turn **PRESETS**: another instrument, with its name in its own colour.
 4. Turn **KNOB 1**: dark to bright. Turn **KNOB 4**: the echo comes on (the FX button lights). Press **FX**: off.
-5. Press **REC**, play a few notes, press **REC** again: it goes round. Turn **PRESETS** to BASS, press **REC**,
+5. Press **SEQ**: a band plays. The screen says which chord it is on and which comes next, and the keys that fit
+   glow. Play along. **SEQ** again for the next band; after the fourth it is off.
+6. Press **REC**, play a few notes, press **REC** again: it goes round. Turn **PRESETS** to BASS, press **REC**,
    play along, press **REC**: two layers.
-6. Press **HOME**: back to piano, everything off. The recording is still there: **PLAY**.
+7. Press **SEL**: the games. **HOME**: back to piano, everything off. The recording is still there: **PLAY**.
 
-## The controls
+## Playing: the details
 
-The table in the [README](../README.md#what-every-control-does) is complete. A few details:
+The tables in the [README](../README.md#playing) are complete. A few details:
 
+- **Letters and chords.** The screen names what she holds. It knows major, minor, diminished, augmented and sus
+  chords and the three common sevenths, in any order of the notes. **GLO** swaps the letters for the sound's wave
+  and back; the choice is kept.
 - **The knobs and their buttons.** ENV, LFO and FX each switch one thing on and off; the knob next in line
   (KNOB 2, 3, 4) sets how much. Turning a knob switches its thing on, so a knob never does nothing.
-- **LENGTH** makes ringing instruments (piano, bells, guitar) ring longer or shorter and gives the held ones
-  (organ, strings, flute) a longer or shorter tail.
+- **The band** never starts by itself and plays quietly under her. It stays in C, so the white keys fit; the glowing
+  keys are the notes of the chord it is on. POP goes C, G, A minor, F; BLUES is a twelve-bar blues; WALTZ is in
+  three; LULLABY has no drums.
 - **The recording** holds about 750 notes in as many layers as she likes. Each note remembers its instrument.
-  It is kept in time with SPEED: turn ALGORITHM and the recording, the beat and the arp all go faster or slower
-  together.
-- **With the beat on (SEQ)**, a new recording is trimmed to a whole number of beats, so it stays in step with the
-  drums.
+  It is kept in time with SPEED: turn ALGORITHM and the recording, the band and the arp all go faster or slower
+  together. With the band on, a new recording is trimmed to a whole number of beats.
 - **The arp is recorded too**: what goes into the recording is what sounded.
-- **SAVE** stops the recording for a moment (the sound has to be quiet while the FM-1 writes), then says SAVED.
-  One recording is kept. At power-on it is there again: PLAY.
+- **SAVE** stops the sound for a moment (the FM-1 has to be quiet while it writes), then says SAVED. One recording
+  is kept. At power-on it is there again: PLAY.
 - **EDIT** needs a full second's hold to erase everything; a tap only takes the last layer away.
 
-## Follow the lights
+## The games: the details
 
-Press **SEL** (or turn **SELECT**): one key is lit, green on the screen. That is the next note of the tune. It
-waits. She plays it, the next one lights. Other keys still sound: it is an instrument, not a test. At the end a
-light runs along the keys and the tune starts again.
-
-Turn **SELECT** for another tune: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat,
-Old MacDonald, Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.
+- Every game starts at level 1 and moves up after five right answers; the level is kept over power-off. Nothing
+  moves a level down.
+- A wrong answer brings the same question again. Twice wrong and it helps: the right keys light (FIND IT, CHORDS),
+  the notes light as they are played again (HIGH LOW), or the tune gets a note shorter (COPY ME).
+- The questions are made up as it goes, so there is no last one.
+- In the games REC, PLAY, SAVE, EDIT, ARP and SEQ say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
+  the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
+- The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
+  Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.
 
 ## MIDI
 
@@ -81,5 +88,5 @@ computer or phone can record her.
 
 ## What it does not do
 
-No demo, no auto-accompaniment, no characters, no games, no hidden pages. One hold exists for grown-ups (QUIET).
-That is on purpose.
+No demo, no characters, no colours or shapes standing in for notes, no hidden pages. One hold exists for grown-ups
+(QUIET). That is on purpose.

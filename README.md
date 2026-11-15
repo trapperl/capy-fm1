@@ -2,53 +2,68 @@
 
 **A first real instrument for a child of five to seven, on the M-VAVE FM-1.**
 
-Wren replaces the FM-1's firmware with a small keyboard instrument that follows three rules:
+Wren replaces the FM-1's firmware with a small keyboard instrument. What it holds to:
 
-1. **Nothing plays unless she plays it.** No demo songs and no backing band. The only things that repeat are what
-   she recorded herself and a plain drum beat she switches on.
-2. **Real instruments with their real names.** Piano, organ, bells, guitar, bass, strings, brass, flute. No cartoon
-   characters and no funny noises.
-3. **Every button does what is printed on it, always.** There are no pages, modes or menus, and HOME always goes
-   home.
+1. **She is the musician.** Nothing plays unless she plays it or switched it on: her own recording, and a band she
+   starts and plays over. No demo songs.
+2. **Real instruments and real names.** Piano, organ, bells, guitar, bass, strings, brass, flute; notes by their
+   letters, chords by their names. What she learns here is true at any piano.
+3. **Every button does what is printed on it.** There are two places, playing and the games, and HOME always goes
+   back.
+4. **The games don't run out.** They make their questions up, get a little harder after five right answers and
+   remember their level. A wrong answer takes nothing away.
 
 <p>
-<img src="docs/screen-piano.png" width="200" alt="Piano: a chord held, the sound's wave above the keyboard">
-<img src="docs/screen-bells.png" width="200" alt="Bells with the echo on">
-<img src="docs/screen-layers.png" width="200" alt="A recording playing with a bass layer on top">
-<img src="docs/screen-tune.png" width="200" alt="Follow the lights: the next key of a tune is green">
+<img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters">
+<img src="docs/screen-band.png" width="160" alt="The band: POP, the chord now is G, next A MINOR, the keys that fit are marked">
+<img src="docs/screen-tunes.png" width="160" alt="TUNES: the next key of Twinkle Twinkle is green">
+<img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
+<img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
+<img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
 </p>
 
-> **Status: 0.1, not yet run on a real FM-1.** Everything here was checked in the host simulator
+> **Status: 0.2, not yet run on a real FM-1.** Everything here was checked in the host simulator
 > (`tests/run_host.sh`), which runs the same code and writes the screen and the sound to files. The device package
-> is built by GitHub Actions. Install the first build with a computer nearby and read
-> [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first. Installing firmware is at your own risk.
+> is built by GitHub Actions, where the build's own safety checks pass. Install the first build with a computer
+> nearby and read [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first. Installing firmware is at your own risk.
 
-## What every control does
+## Playing
 
 | Control | What it does |
 | --- | --- |
-| Keys | Play. Ten notes at once. The key lights show what sounds. |
+| Keys | Play. Twelve notes at once. The screen names what she holds: one note's letter, several notes' letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
 | **PRESETS** | The instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE. |
 | **OCT-**, **OCT+** | Lower, higher. |
 | **KNOB 1** | TONE: dark to bright. |
 | **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much, ENV switches it on and off. |
 | **KNOB 3**, **LFO** | WOBBLE: vibrato. The knob sets how much, LFO switches it on and off. |
 | **KNOB 4**, **FX** | ECHO. The knob sets how much, FX switches it on and off. |
+| **GLO** | The note letters (on the screen's keys, and what she holds), or the sound's wave instead. |
 | **ARP** | Held keys play one after the other. |
-| **SEQ** | A drum beat to play along with. |
-| **ALGORITHM** | SPEED of the beat, the arp and the recording (60 to 180). |
+| **SEQ** | The band: each press the next one, POP, BLUES, WALTZ, LULLABY, then off. Drums, bass and chords in C. The screen says the chord now and the next one; the keys that fit glow, the others still play. |
+| **ALGORITHM** | SPEED of the band, the arp and the recording (60 to 180). |
 | **REC** | Record what you play. REC again and it goes round. REC while it plays adds a layer, with any instrument. |
 | **PLAY** | The recording on and off. |
 | **EDIT** | Tap: take the last layer away. Hold a second: erase the recording. |
 | **SAVE** | Keep the recording for next time. |
-| **SEL**, **SELECT** | Follow the lights: the next key of a tune is lit green and waits for her. SELECT picks the tune (nine traditional ones). She plays every note; nothing is played for her. |
-| **GLO** | The two C keys glow, to find your way. |
+| **SEL** | The games. |
 | **HOME** | Back to the start: piano, everything off. The recording is kept. |
 | **MASTER** | Volume. |
 | **HOME held 3 s** | For grown-ups: QUIET, half the loudness, kept over power-off. |
 
-The screen shows the instrument's name, the sound's wave, one line that says what is going on, the keyboard, and
-the four knobs with their names.
+## The games
+
+**SEL** goes in, **SELECT** picks the game, **SEL** again asks for another question, **HOME** leaves. The
+instrument, the knobs and the keys work as always.
+
+| Game | What she does | How it grows |
+| --- | --- | --- |
+| **TUNES** | The next key of a tune is green and waits for her; the screen says its letter. She plays every note. | Nine traditional tunes, one after the other. |
+| **FIND IT** | The screen shows a letter: find that key. A wrong key is named ("THAT WAS C"); after two, the right keys light. | C D E, then up to G, all white keys, the black keys. |
+| **COPY ME** | It plays a few notes, she plays them back. Each time right, one note more. | From 2 notes up to 12, on more keys. |
+| **HIGH LOW** | Two notes: was the second higher or lower? OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
+| **CHORDS** | The screen names a chord: hold its three notes. Stuck, and the keys light. | C F G, then the minor ones, then any key. |
+| **TAP IT** | A drum plays a rhythm, shown as boxes: tap it back on any key. | Three slow hits up to six quick ones. |
 
 More in the [manual](docs/MANUAL.md).
 

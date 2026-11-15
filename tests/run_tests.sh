@@ -21,6 +21,7 @@ run() { echo "== $1"; shift; "$@" || fail=1; }
 run "FM-1 app on the host: the default script plays, screens and sound" sh tests/run_host.sh
 run "SMK-37 app on the host: the default script" env BOARD=smk37 sh tests/run_host.sh
 run "Wren: a tour of every button and knob (tests/scripts/tour.txt)" sh tests/run_host.sh tests/scripts/tour.txt
+run "Wren: the games (tests/scripts/games.txt)" sh tests/run_host.sh tests/scripts/games.txt
 run "FM-1 MIDI: USB, the TRS jack, a clock, the channel" sh tests/run_host.sh tests/scripts/midi.txt
 run "SMK-37: velocity, a pad, an outer key, the pitch wheel" env BOARD=smk37 sh tests/run_host.sh tests/scripts/smk37.txt
 
