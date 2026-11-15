@@ -46,7 +46,7 @@ levels gained in the games, another baby moves in, up to five.
 | **KNOB 4** | TONE: dark to bright. |
 | **GLO** | The note letters (on the screen's keys, and what she holds), or the sound's wave instead. |
 | **ARP** | Held keys play one after the other. |
-| **SEQ** | The band: each press the next one, POP, BLUES, WALTZ, LULLABY, then off. Drums, bass and chords in C. The screen says the chord now and the next one; the keys that fit glow, the others still play. |
+| **SEQ** | The band: each press the next one, POP, BLUES, WALTZ, LULLABY, then off. First only its drums. A low key (F to E, marked orange on the screen) leads it: the bass and the chords play that key's chord until she picks another. The screen says the chord; the keys that fit glow, the others still play. |
 | **ALGORITHM** | SPEED of the band, the arp and the recording (60 to 180). |
 | **REC** | Record what you play. REC again and it goes round. REC while it plays adds a layer, with any instrument. |
 | **PLAY** | The recording on and off. |

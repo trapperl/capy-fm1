@@ -18,8 +18,9 @@
  *   KNOB 4      TONE: dark .. bright
  *   GLO         the note letters (on the screen's keys, and what she holds), or the sound's wave
  *   ARP         held keys play one after the other
- *   SEQ         the band: POP, BLUES, WALTZ, LULLABY, off. Drums, bass and chords in C; the screen says the chord
- *               now and the next one, the keys that fit glow       ALGORITHM: the SPEED of band, arp and recording
+ *   SEQ         the band: POP, BLUES, WALTZ, LULLABY, off. First only its drums; a low key (F to E, marked on
+ *               the screen) leads it: bass and chords play that key's chord until she picks another, the keys that
+ *               fit glow                                           ALGORITHM: the SPEED of band, arp and recording
  *   REC         record what you play; REC again: it goes round. REC while it plays: add a layer
  *   PLAY        the recording on / off
  *   EDIT        tap: take the last layer away. Held a second: erase the recording
@@ -335,24 +336,27 @@ static void say(const char *s)
     msg_until = fm1_ms + 1600u;
 }
 
-/* ---- the band: drums, a bass and chords she switches on and plays over. It goes round a few chords in C. */
+/* ---- the band: drums she switches on, and a bass and chords that follow her: the lowest octave of keys (F..E)
+ * leads, each white key its chord in C (B: G, its nearest), kept until she picks another. Until the first one the
+ * drums play alone: a beat is easy to play over, nothing in it can clash. */
 static const struct { uint8_t pc, minor; const char *name; } BCH[6] = {
     {0, 0, "C"}, {2, 1, "D MINOR"}, {4, 1, "E MINOR"}, {5, 0, "F"}, {7, 0, "G"}, {9, 1, "A MINOR"}};
 typedef struct {
     const char *name;
-    uint8_t spb, nbars;                         /* sixteenths a bar, bars */
-    uint8_t prog[12];                           /* a chord (BCH) for each bar */
+    uint8_t spb;                                /* sixteenths a bar */
     uint16_t kick, snare, hat, bass, comp, arp; /* bit s: on sixteenth s of the bar */
     uint8_t walk;                               /* the bass walks up the chord */
 } style_t;
 #define NSTYLE 4u
 static const style_t STYLE[NSTYLE] = {
-    {"POP", 16, 4, {0, 4, 5, 3}, 0x0501, 0x1010, 0x5555, 0x0541, 0x1041, 0, 0},
-    {"BLUES", 16, 12, {0, 0, 0, 0, 3, 3, 0, 0, 4, 3, 0, 4}, 0x0101, 0x1010, 0x5555, 0x1111, 0x4444, 0, 1},
-    {"WALTZ", 12, 4, {0, 3, 4, 0}, 0x001, 0, 0x110, 0x001, 0x110, 0, 0},
-    {"LULLABY", 16, 4, {5, 3, 0, 4}, 0, 0, 0x1010, 0x0001, 0, 0x5555, 0},
+    {"POP", 16, 0x0501, 0x1010, 0x5555, 0x0541, 0x1041, 0, 0},
+    {"BLUES", 16, 0x0101, 0x1010, 0x5555, 0x1111, 0x4444, 0, 1},
+    {"WALTZ", 12, 0x001, 0, 0x110, 0x001, 0x110, 0, 0},
+    {"LULLABY", 16, 0, 0, 0x1010, 0x0001, 0, 0x5555, 0},
 };
-static uint32_t band_origin, band_step = 0xFFFFFFFFu, band_ch, band_next;
+#define LEAD_KEYS 12u                           /* the keys that lead the band: F3..E4 as printed (any octave) */
+static uint32_t band_origin, band_step = 0xFFFFFFFFu, band_ch;
+static uint8_t band_led;                        /* she has picked a chord: the bass and the chords play */
 static uint8_t band_bass = 255, band_comp[3] = {255, 255, 255}, band_arp = 255;
 static uint32_t chord_pcs(uint32_t ch)          /* bit = pitch class of a chord tone */
 {
@@ -368,21 +372,19 @@ static void band_quiet(void)
 static void band_run(void)
 {
     const style_t *y;
-    uint32_t st, s, bar, r, third, i;
+    uint32_t st, s, r, third, i;
     if (!band) return;
     y = &STYLE[band - 1u];
     st = (tick - band_origin) / (PPQ / 4u);
     if (st == band_step) return;
     band_step = st;
     s = st % y->spb;
-    bar = st / y->spb;
-    band_ch = y->prog[bar % y->nbars];
-    band_next = y->prog[(bar + 1u) % y->nbars];
     r = BCH[band_ch].pc;
     third = BCH[band_ch].minor ? 3u : 4u;
     if (y->kick >> s & 1u) k_trig++;
     if (y->snare >> s & 1u) s_trig++;
     if (y->hat >> s & 1u) h_trig++;
+    if (!band_led) return;                      /* the drums alone, until she leads */
     if (y->bass >> s & 1u) {
         static const uint8_t WALK[4] = {0, 4, 7, 9};
         uint32_t n = 48u + r + (y->walk ? WALK[s / 4u & 3u] : 0u);
@@ -405,6 +407,30 @@ static void band_run(void)
         if (band_arp != 255u) stop(band_arp, 3, S_BAND);
         band_arp = (uint8_t)(60u + t[s / 2u & 3u] % 12u);
         play(band_arp, 3, S_BAND, 130);
+    }
+}
+static void band_lead(uint32_t k, uint32_t keys)   /* key k (0 = F) went down with the band on; keys: all held */
+{
+    static const int8_t CH[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 4};   /* by pitch class: C Dm Em F G Am, B: G */
+    int32_t ch;
+    uint32_t r, third, t[3], i;
+    if (!band || k >= LEAD_KEYS) return;
+    for (k = 0; !(keys >> k & 1u); k++) ;       /* the lowest key held leads: C E G in the low keys is C, not E minor */
+    ch = CH[(53u + k) % 12u];
+    if (ch < 0 || (band_led && (uint32_t)ch == band_ch)) return;
+    band_ch = (uint32_t)ch;
+    band_led = 1;
+    band_quiet();
+    r = BCH[ch].pc;                             /* and it answers at once: the bass and the chord, not at the next hit */
+    third = BCH[ch].minor ? 3u : 4u;
+    band_bass = (uint8_t)(48u + r);
+    play(band_bass, 4, S_BAND, 190);
+    if (STYLE[band - 1u].comp) {
+        t[0] = r; t[1] = r + third; t[2] = r + 7u;
+        for (i = 0; i < 3u; i++) {
+            band_comp[i] = (uint8_t)(55u + (t[i] + 5u) % 12u);
+            play(band_comp[i], 0, S_BAND, 105);
+        }
     }
 }
 
@@ -924,10 +950,11 @@ static uint32_t midi_in(void)                   /* 1: a note came in */
 #define C_TXT RGB(170, 170, 170)
 #define C_GOAL RGB(60, 230, 90)
 #define C_FIT RGB(80, 150, 255)
+#define C_LEAD RGB(255, 170, 30)
 #define KEY0 53u
 static int black(uint32_t note) { return (0x54Au >> (note % 12u)) & 1u; }
 
-static void draw_keys(uint32_t lit, uint32_t goal, uint32_t fit, uint16_t col)   /* goal: a game points at them, green; fit: the band's chord */
+static void draw_keys(uint32_t lit, uint32_t goal, uint32_t fit, uint16_t col, int lead)   /* goal: a game points at them, green; fit: the band's chord */
 {
     uint32_t k, w = 0;
     cv_begin(240, 56, C_BLACK);
@@ -936,6 +963,7 @@ static void draw_keys(uint32_t lit, uint32_t goal, uint32_t fit, uint16_t col)  
             int32_t x = 8 + (int32_t)w * 14;
             cv_rect(x, 0, 13, 56, goal >> k & 1u ? C_GOAL : lit >> k & 1u ? col : C_KEY);
             if (fit >> k & 1u) cv_rect(x, 50, 13, 6, C_FIT);                           /* it fits the band's chord */
+            if (lead && k < LEAD_KEYS) cv_rect(x, 0, 13, 4, C_LEAD);                    /* it leads the band */
             if (letters) cv_text(x + 3, 34, &FONT_S, NN[(KEY0 + k) % 12u], C_BLACK);   /* its letter */
             w++;
         }
@@ -1136,8 +1164,7 @@ static void status_text(char *s)                /* what is going on, in one line
     else if (rec == R_DUB) nput(sput(p, "RECORDING LAYER "), L.layers);
     else if (band) {                            /* the chord now and the one coming: what fits */
         p = sput(sput(p, STYLE[band - 1u].name), ": ");
-        p = sput(sput(p, BCH[band_ch].name), "  NEXT ");
-        sput(p, BCH[band_next].name);
+        sput(p, band_led ? BCH[band_ch].name : "A LOW KEY LEADS");
     } else if (playing) sput(p, "YOUR RECORDING PLAYS");
     else if (L.len) sput(p, "PLAY: HEAR YOUR RECORDING");
     else {
@@ -1243,6 +1270,7 @@ static void app_main(void)
                 }
                 bounce_t = fm1_ms;
                 if (place) game_key(k);
+                else band_lead(k, keys);
             }
             if (up >> k & 1u && held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
         }
@@ -1301,7 +1329,7 @@ static void app_main(void)
                 band_quiet();
                 band_origin = playing ? loop_t0 : tick;   /* its "one" is now, or the recording's */
                 band_step = 0xFFFFFFFFu;
-                if (band) { band_ch = STYLE[band - 1u].prog[0]; band_next = STYLE[band - 1u].prog[1]; }
+                band_led = 0;                   /* each band starts with its drums alone */
                 if (!band) say("BAND OFF");
             }
             if (b & 1u << BTN_REC) {
@@ -1406,7 +1434,7 @@ static void app_main(void)
             if (game == G_TUNES) goal = 1u << song_key(SONG[set.song % NSONG].notes[song_pos]);
             glow = 1u << 7 | 1u << 19;          /* C4, C5: to find your way */
         } else
-            glow = band ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
+            glow = band && band_led ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
         {
             static uint32_t breathing;
             uint32_t left = flash_until - fm1_ms, lvl = 0;
@@ -1486,8 +1514,8 @@ static void app_main(void)
             status_drawn = hash;
             draw_text_box(0, 112, 240, &FONT_S, line, (int32_t)(msg_until - fm1_ms) > 0 ? C_WHITE : C_TXT, 1);
         }
-        hash = lit * 2654435761u ^ goal * 40503u ^ letters ^ (band && !place ? glow * 7919u : 0u);
-        if (hash != keys_drawn) { keys_drawn = hash; draw_keys(lit, goal, band && !place ? glow : 0u, PATCH[cur_patch].col); }
+        hash = lit * 2654435761u ^ goal * 40503u ^ letters ^ (band && !place ? glow * 7919u + band + 256u * band_led : 0u);
+        if (hash != keys_drawn) { keys_drawn = hash; draw_keys(lit, goal, band && !place && band_led ? glow : 0u, PATCH[cur_patch].col, band && !place); }
         hash = g_tone | (uint32_t)g_len << 5 | (uint32_t)g_wob << 10 | (uint32_t)g_echo << 15
              | (uint32_t)g_len_on << 20 | (uint32_t)g_wob_on << 21 | (uint32_t)g_echo_on << 22;
         if (hash != knobs_drawn) { knobs_drawn = hash; draw_knobs(); }

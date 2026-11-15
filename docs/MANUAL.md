@@ -42,8 +42,9 @@ FM-1 is wrapped up as a present.
 2. Play a key: the screen says its letter. Play C, E and G together: it says C MAJOR.
 3. Turn **PRESETS**: another instrument, with its name in its own colour.
 4. Turn **KNOB 4**: dark to bright. Turn **KNOB 1**: the echo comes on (the FX button lights). Press **FX**: off.
-5. Press **SEQ**: a band plays. The screen says which chord it is on and which comes next, and the keys that fit
-   glow. Play along. **SEQ** again for the next band; after the fourth it is off.
+5. Press **SEQ**: drums play. Press a low key (the ones marked orange on the screen): the bass and the chords join
+   in on that key's chord, and the keys that fit glow. Another low key, another chord. **SEQ** again for the next
+   band; after the fourth it is off.
 6. Press **REC**, play a few notes, press **REC** again: it goes round. Turn **PRESETS** to BASS, press **REC**,
    play along, press **REC**: two layers.
 7. Press **SEL**: the games. **HOME**: back to piano, everything off. The recording is still there: **PLAY**.
@@ -57,9 +58,12 @@ The tables in the [README](../README.md#playing) are complete. A few details:
   and back; the choice is kept.
 - **The knobs and their buttons.** FX, ENV and LFO each switch one thing on and off; the knob above each
   (KNOB 1, 2, 3) sets how much, and the screen shows them in the same order: ECHO, LENGTH, WOBBLE, then TONE (KNOB 4). Turning a knob switches its thing on, so a knob never does nothing.
-- **The band** never starts by itself and plays quietly under her. It stays in C, so the white keys fit; the glowing
-  keys are the notes of the chord it is on. POP goes C, G, A minor, F; BLUES is a twelve-bar blues; WALTZ is in
-  three; LULLABY has no drums.
+- **The band** never starts by itself and plays quietly under her. It begins with its drums alone (LULLABY has
+  none: it waits). She leads it with the lowest octave of keys, F to E: each white key is a chord in C (C, D minor,
+  E minor, F, G, A minor; B plays G), kept until she picks another, and the band answers at once. Of several low
+  keys held, the lowest leads, so a C chord played down there is C. The keys play their own notes as always. It
+  stays in C, so the white keys fit; the glowing keys are the notes of the chord it is on. BLUES walks its bass;
+  WALTZ is in three.
 - **The recording** holds about 750 notes in as many layers as she likes. Each note remembers its instrument.
   It is kept in time with SPEED: turn ALGORITHM and the recording, the band and the arp all go faster or slower
   together. With the band on, a new recording is trimmed to a whole number of beats.
