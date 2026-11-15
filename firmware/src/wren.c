@@ -38,6 +38,7 @@ static void app_idle(void);
 
 /* ================================================================ the sound (audio ISR) */
 #define NV 12u                                  /* voices */
+#define LEVEL_PEAK 18000                       /* the mix's peak before the echo and the ceiling's knee (20000) */
 #define SUB 32u                                 /* envelopes, pitch and index move every SUB frames (1378 Hz) */
 #define ELEN 32768u                             /* the echo's line: 743 ms */
 
@@ -198,6 +199,23 @@ static void app_audio(int32_t *out, uint32_t n)
             h_prev = nz;
             mono[i] += x;
         }
+
+    /* the level: many notes at once added up past the ceiling's knee, and its corner garbled them. The block is
+     * all here before it goes out, so its peak is known: over LEVEL_PEAK the whole mix turns down (within 32
+     * frames), and comes back up over ~0.1 s (1/16 of the way a 5.8 ms block). A note or two is untouched. */
+    {
+        static int32_t lg = 4096;               /* the gain, Q12 */
+        int32_t pk = 0, want = 4096, g0 = lg, g1, x;
+        for (i = 0; i < n; i++) { x = mono[i] < 0 ? -mono[i] : mono[i]; if (x > pk) pk = x; }
+        if (pk > LEVEL_PEAK) want = (int32_t)(((uint32_t)LEVEL_PEAK << 12) / (uint32_t)pk);
+        g1 = want < g0 ? want : g0 + ((want - g0) >> 4);
+        lg = g1;
+        if (g0 < 4096 || g1 < 4096)
+            for (i = 0; i < n; i++) {
+                int32_t g = i < 32u ? g0 + (((g1 - g0) * (int32_t)i) >> 5) : g1;
+                mono[i] = (mono[i] * g) >> 12;
+            }
+    }
 
     /* the echo, the ceiling, out */
     for (i = 0; i < n; i++) {
