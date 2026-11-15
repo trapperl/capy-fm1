@@ -13,11 +13,12 @@ Wren replaces the FM-1's firmware with a small keyboard instrument. What it hold
 4. **The games don't run out.** They make their questions up, get a little harder after five right answers and
    remember their level. A wrong answer takes nothing away.
 
-A capybara sits beside the instrument's name. She sings when notes sound, nods to the band, blinks, and gets a
-yuzu on her head for a chord or a right answer.
+A capybara and her baby sit beside the instrument's name. She sings when notes sound, nods to the band, blinks,
+and gets a yuzu on her head for a chord or a right answer. HOME (and switching on) shows their pond: every three
+levels gained in the games, another baby moves in, up to five.
 
 <p>
-<img src="docs/screen-hello.png" width="160" alt="Hello: the capybara with a yuzu on her head">
+<img src="docs/screen-hello.png" width="160" alt="The pond: the capybara with a yuzu on her head and five babies, three of them swimming">
 <img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters">
 <img src="docs/screen-band.png" width="160" alt="The band: POP, the chord now is G, next A MINOR, the keys that fit are marked">
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
@@ -50,7 +51,7 @@ yuzu on her head for a chord or a right answer.
 | **EDIT** | Tap: take the last layer away. Hold a second: erase the recording. |
 | **SAVE** | Keep the recording for next time. |
 | **SEL** | The games. |
-| **HOME** | Back to the start: piano, everything off. The recording is kept. |
+| **HOME** | Back to the start: piano, everything off, and a look at the pond. The recording is kept. |
 | **MASTER** | Volume. |
 | **HOME held 3 s** | For grown-ups: QUIET, half the loudness, kept over power-off. |
 
