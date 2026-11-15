@@ -308,7 +308,7 @@ static uint8_t cur_patch, band, arp_on, letters = 1, place;   /* place: 0 playin
 static int8_t oct;
 
 static char msg[32];
-static uint32_t msg_until, party_until;
+static uint32_t msg_until, party_until, yuzu_until, bounce_t;
 static void say(const char *s)
 {
     uint32_t i = 0;
@@ -707,6 +707,7 @@ static void game_right(void)
     play(84, 2, S_CUE, 150);                    /* two little bells */
     play(88, 2, S_CUE, 150);
     ding_off = fm1_ms + 200u;
+    yuzu_until = fm1_ms + 1500u;
     if (++g_ok >= 5u && set.lvl[game] < GMAX[game]) {
         set.lvl[game]++;
         g_ok = 0;
@@ -937,6 +938,61 @@ static void draw_panel(const char *big, const char *small, uint16_t col)   /* tw
     cv_blit(0, 44);
 }
 
+/* ---- the capybara: she sits by the name, sings when notes sound, nods to the band, blinks, and gets a yuzu on
+ * her head for a chord or a right answer. b body, d dark, e eye, n nose, m mouth, o yuzu, g its leaf */
+static const char *const CAPY[20] = {
+    ".................g......",
+    "................ooo.....",
+    "...............ooooo....",
+    "................ooo.....",
+    "..............dd....dd..",
+    "..............bbbbbbbb..",
+    ".............bbbbbbbbbb.",
+    ".............bbebbbbbbbb",
+    ".............bbbbbbbbbnn",
+    "...bbbbbbbbbbbbbbbbbbbbb",
+    "..bbbbbbbbbbbbbbbbbbmmm.",
+    ".bbbbbbbbbbbbbbbbbbbbb..",
+    ".bbbbbbbbbbbbbbbbbbb....",
+    ".bbbbbbbbbbbbbbbbbbb....",
+    ".bbbbbbbbbbbbbbbbbbb....",
+    ".bbbbbbbbbbbbbbbbbb.....",
+    "..bbbbbbbbbbbbbbbb......",
+    "..bbb.bbb....bbb.bbb....",
+    "..bbb.bbb....bbb.bbb....",
+    "..ddd.ddd....ddd.ddd....",
+};
+enum { CAPY_SING = 1, CAPY_BLINK = 2, CAPY_YUZU = 4, CAPY_UP = 8 };
+static void capy_px(int cv, int32_t x, int32_t y, int32_t s, uint16_t c)
+{
+    if (cv) cv_rect(x, y, s, s, c);
+    else lcd_fill((uint32_t)x, (uint32_t)y, (uint32_t)s, (uint32_t)s, c);
+}
+static void draw_capy(int cv, int32_t x, int32_t y, int32_t s, uint32_t f)   /* cv: into the canvas; s: pixel size */
+{
+    uint32_t r, c;
+    for (r = 0; r < 20u; r++)
+        for (c = 0; c < 24u; c++) {
+            char ch = CAPY[r][c];
+            uint16_t col;
+            if (ch == '.') continue;
+            if ((ch == 'o' || ch == 'g') && !(f & CAPY_YUZU)) continue;
+            col = ch == 'b' ? RGB(176, 124, 72) : ch == 'd' ? RGB(104, 68, 40) : ch == 'n' ? RGB(60, 40, 30)
+                : ch == 'o' ? RGB(255, 170, 30) : ch == 'g' ? RGB(70, 190, 70)
+                : ch == 'e' ? (f & CAPY_BLINK ? RGB(104, 68, 40) : C_BLACK)
+                : f & CAPY_SING ? RGB(60, 20, 20) : RGB(104, 68, 40);          /* m: the mouth, open when she sings */
+            capy_px(cv, x + (int32_t)c * s, y + (int32_t)r * s - (f & CAPY_UP ? s : 0), s, col);
+            if (ch == 'm' && f & CAPY_SING) capy_px(cv, x + (int32_t)c * s, y + (int32_t)(r + 1u) * s - (f & CAPY_UP ? s : 0), s, col);
+        }
+}
+static void draw_top(const char *name, uint16_t col, uint32_t f)   /* the instrument or the game, and the capybara */
+{
+    cv_begin(240, 44, C_BLACK);
+    cv_text((188 - text_w(&FONT_L, name)) / 2, 6, &FONT_L, name, col);
+    draw_capy(1, 190, 2, 2, f);
+    cv_blit(0, 0);
+}
+
 static void draw_knobs(void)                    /* the four knobs: their names, how far, lit when on */
 {
     static const char *const NAME[4] = {"TONE", "LENGTH", "WOBBLE", "ECHO"};
@@ -995,7 +1051,7 @@ static uint32_t held_text(char *big, char *small)   /* returns a number that cha
     sig = n << 24;
     for (i = 0; i < n; i++) { pcs |= 1u << note[i] % 12u; sig = sig * 31u + note[i]; }
     big[0] = small[0] = 0;
-    if (chord_name(pcs, note[0] % 12u, big)) p = small;       /* the chord big, its notes small */
+    if (chord_name(pcs, note[0] % 12u, big)) { p = small; yuzu_until = fm1_ms + 800u; }   /* the chord big, its notes small; a yuzu */
     for (i = 0, j = 0, v = 0; i < n && j < 5u; i++) {   /* each letter once, from the lowest up */
         if (v >> note[i] % 12u & 1u) continue;
         v |= 1u << note[i] % 12u;
@@ -1050,6 +1106,12 @@ static void app_main(void)
     go_home();
     tick_ms = fm1_ms;
 
+    lcd_fill(0, 0, 240, 240, C_BLACK);          /* hello: the capybara, big, until a key or a second and a half */
+    draw_capy(0, 48, 30, 6, CAPY_YUZU);
+    draw_text_box(0, 170, 240, &FONT_L, "HELLO!", RGB(255, 170, 30), 1);
+    draw_text_box(0, 212, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);
+    while (fm1_ms - tick_ms < 1500u && !fm1_in.notes && !fm1_in.buttons) platform_poll();
+    tick_ms = fm1_ms;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     for (;;) {
         uint32_t keys, down, up, rel, b, lit = 0, goal = 0, glow = 0;
@@ -1070,6 +1132,7 @@ static void app_main(void)
                     held_pi[k] = cur_patch;
                     live_on(held_note[k], held_pi[k], 1);
                 }
+                bounce_t = fm1_ms;
                 if (place) game_key(k);
             }
             if (up >> k & 1u && held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
@@ -1253,13 +1316,20 @@ static void app_main(void)
 
         /* ---- the screen: only what changed */
         idle_ok = 1;
-        hash = place ? 100u + game : cur_patch;
-        if (hash != name_drawn) {               /* the top line: the instrument, or the game */
-            name_drawn = hash;
-            draw_text_box(0, 6, 240, &FONT_L, place ? GNAME[game] : PATCH[cur_patch].name,
-                          place ? C_GOAL : PATCH[cur_patch].col, 1);
-            knobs_drawn = keys_drawn = panel_drawn = ~0u;
-            scope_idle = 0;
+        {                                       /* the top line: the instrument or the game, and the capybara */
+            uint32_t f = 0, sounding = 0;
+            for (k = 0; k < NV; k++)
+                if (voice[k].gate && (voice[k].src == S_LIVE || voice[k].src == S_CUE)) sounding = 1;
+            if (sounding) f |= CAPY_SING;
+            if (fm1_ms % 4000u < 150u) f |= CAPY_BLINK;
+            if (band ? (tick - band_origin) % PPQ < 200u : sounding && fm1_ms - bounce_t < 120u) f |= CAPY_UP;
+            if ((int32_t)(yuzu_until - fm1_ms) > 0 || (int32_t)(party_until - fm1_ms) > 0) f |= CAPY_YUZU;
+            hash = (place ? 100u + game : cur_patch) | f << 8;
+            if (hash != name_drawn) {
+                if ((hash ^ name_drawn) & 255u) { knobs_drawn = keys_drawn = panel_drawn = ~0u; scope_idle = 0; }
+                name_drawn = hash;
+                draw_top(place ? GNAME[game] : PATCH[cur_patch].name, place ? C_GOAL : PATCH[cur_patch].col, f);
+            }
         }
         if (place) {                            /* the game's question */
             game_text(big, small);

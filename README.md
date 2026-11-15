@@ -13,10 +13,13 @@ Wren replaces the FM-1's firmware with a small keyboard instrument. What it hold
 4. **The games don't run out.** They make their questions up, get a little harder after five right answers and
    remember their level. A wrong answer takes nothing away.
 
+A capybara sits beside the instrument's name. She sings when notes sound, nods to the band, blinks, and gets a
+yuzu on her head for a chord or a right answer.
+
 <p>
+<img src="docs/screen-hello.png" width="160" alt="Hello: the capybara with a yuzu on her head">
 <img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters">
 <img src="docs/screen-band.png" width="160" alt="The band: POP, the chord now is G, next A MINOR, the keys that fit are marked">
-<img src="docs/screen-tunes.png" width="160" alt="TUNES: the next key of Twinkle Twinkle is green">
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
