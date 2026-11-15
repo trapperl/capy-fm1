@@ -21,12 +21,14 @@ mother dozes off, yuzus drop in for a bath), and OCT- and OCT+ step through them
 levels gained in the games, another baby moves in, up to five.
 
 <p>
-<img src="docs/screen-hello.png" width="160" alt="The pond: the capybara with a yuzu on her head and five babies, three of them swimming">
-<img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters">
-<img src="docs/screen-band.png" width="160" alt="The band: POP, the chord now is G, next A MINOR, the keys that fit are marked">
+<img src="docs/screen-hello.png" width="160" alt="The pond: a wren sings on the capybara's back, two babies on the grass, three in the water">
+<img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters, the knobs read ECHO LENGTH WOBBLE TONE">
+<img src="docs/screen-band.png" width="160" alt="The band: POP on the chord C; the keys that lead it are marked orange, the keys that fit blue">
+<img src="docs/screen-drums.png" width="160" alt="DRUMS: the key G is the HIGH TOM">
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
+<img src="docs/screen-join.png" width="160" alt="JOIN IN: your turn, the next key is green">
 <img src="docs/pond.gif" width="160" alt="The pond and its scenes">
 </p>
 
