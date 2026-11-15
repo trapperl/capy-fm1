@@ -21,6 +21,7 @@
  *   SEQ         CLICK (a metronome), then the band: POP, BLUES, WALTZ, LULLABY, off. First only its drums; a low key (F to E, marked on
  *               the screen) leads it: bass and chords play that key's chord until she picks another, the keys that
  *               fit glow                                           ALGORITHM: the SPEED of band, arp and recording
+ *   SELECT      which of her four songs REC, PLAY, SAVE and EDIT mean; the one she leaves is kept
  *   REC         record what you play; REC again: it goes round. REC while it plays: add a layer
  *   PLAY        the recording on / off
  *   EDIT        tap: take the last layer away. Held a second: erase the recording
@@ -494,7 +495,7 @@ static void band_lead(uint32_t k, uint32_t keys)   /* key k (0 = F) went down wi
 typedef struct { uint32_t t; uint8_t note, pi, on, layer; } ev_t;
 static struct { uint32_t len; uint16_t n; uint8_t layers, pad; ev_t ev[NEV]; } L;   /* (saved as it is: slot 0) */
 enum { R_IDLE, R_ARMED, R_FIRST, R_DUB };
-static uint8_t rec, playing;
+static uint8_t rec, playing, song_dirty;        /* song_dirty: the recording is not as it was saved */
 static uint32_t loop_t0, loop_ptr, rec_t0;
 static uint16_t open_n, open_note[16];          /* notes recorded on and not yet off: note | pi << 8 */
 
@@ -524,6 +525,7 @@ static void loop_start(uint32_t at_tick)
 static void rec_close(void)                     /* the notes still held get their note-off, the recording ends */
 {
     uint32_t i;
+    song_dirty = 1;
     if (rec == R_FIRST) {
         int32_t len = (int32_t)(tick - rec_t0);
         if (len < 240) len = 240;
@@ -598,6 +600,7 @@ static void loop_undo(void)                     /* the last layer away */
 {
     uint32_t i, j = 0;
     int32_t pos;
+    song_dirty = 1;
     if (rec != R_IDLE) rec_close();
     if (L.layers <= 1u) {
         loop_stop();
@@ -652,18 +655,22 @@ static void arp_run(void)
 }
 
 /* ================================================================ the games */
-/* Six games that never run out: each makes its questions up as it goes, gets a little harder after five right
+/* Seven games that never run out: each makes its questions up as it goes, gets a little harder after five right
  * answers and remembers its level. A wrong answer costs nothing: the question comes again, then with a hint. */
-enum { G_TUNES, G_FIND, G_COPY, G_HILO, G_CHORD, G_TAP, NGAME };
-static const char *const GNAME[NGAME] = {"TUNES", "FIND IT", "COPY ME", "HIGH LOW", "CHORDS", "TAP IT"};
-static const uint8_t GMAX[NGAME] = {1, 5, 12, 5, 4, 4};
+enum { G_TUNES, G_FIND, G_COPY, G_HILO, G_CHORD, G_TAP, G_ALONG, NGAME };
+static const char *const GNAME[NGAME] = {"TUNES", "FIND IT", "COPY ME", "HIGH LOW", "CHORDS", "TAP IT", "JOIN IN"};   /* (JOIN IN: "play along", in letters that fit beside the capybara) */
+static const uint8_t GMAX[NGAME] = {1, 5, 12, 5, 4, 4, 5};
 enum { P_NEW, P_CUE, P_WAIT, P_DONE };
-static struct { uint8_t quiet, letters, song, lvl[NGAME]; } set;   /* what survives a power-off */
+#define NSAVE 4u                                /* her songs: SELECT picks one, slot 0..3 */
+static struct { uint8_t quiet, letters, song, lvl[NGAME], slot; } set;   /* what survives a power-off (new things go at the end:
+                                                                          an older, shorter one still loads, see app_main) */
 static uint32_t set_dirty;
 static uint8_t game, g_phase, g_ok, g_miss, cue_hide;
 static uint32_t g_t, rnd_m = 12345u, hint_mask, q_pc = 99, q_n, q_pos, q_hi, q_mask, q_t0, chord_seen;
 static uint8_t q_note[16];
 static uint32_t tap_t[8];
+static uint32_t al_t0, al_i;                    /* PLAY ALONG: the tick its tune starts on (a bar line), the next note to play */
+static uint8_t al_slot[8];                      /* ... and the eighth of the bar each note falls on */
 
 static uint32_t rnd_n(uint32_t n)
 {
@@ -682,7 +689,7 @@ static void cue_go(uint32_t wait_ms) { cue_i = 0; cue_t0 = fm1_ms + wait_ms; g_p
 static void cue_run(void)
 {
     if (cue_on != 255u && (int32_t)(fm1_ms - cue_off) >= 0) { stop(cue_on, cue_pi, S_CUE); cue_on = 255; }
-    if (g_phase != P_CUE || !place) return;
+    if (g_phase != P_CUE || !place || game == G_ALONG) return;   /* (PLAY ALONG keeps its own time, in ticks) */
     while (cue_i < cue_n && (int32_t)(fm1_ms - cue_t0) >= (int32_t)cue[cue_i].t) {
         if (cue[cue_i].key == 255u) s_trig++;
         else {
@@ -698,16 +705,17 @@ static void cue_run(void)
 }
 
 /* c d e f g a b = C4..B4, C D E F G = C5..G5, x y z = G3 A3 B3. Traditional tunes, written out note by note. */
-static const struct { const char *name, *notes; } SONG[] = {
-    {"TWINKLE TWINKLE", "ccggaagffeeddcggffeedggffeedccggaagffeeddc"},
-    {"MARY HAD A LAMB", "edcdeeedddeggedcdeeeeddedc"},
-    {"ODE TO JOY", "eefggfedccdeeddeefggfedccdedcc"},
-    {"FRERE JACQUES", "cdeccdecefgefggagfecgagfeccxccxc"},
-    {"ROW YOUR BOAT", "cccdeedefgCCCgggeeecccgfedc"},
-    {"OLD MACDONALD", "cccxyyxeeddcxcccxyyxeeddc"},
-    {"JINGLE BELLS", "eeeeeeegcdefffffeeeeddedgeeeeeeegcdefffffeeeggfdc"},
-    {"LONDON BRIDGE", "gagfefgdefefggagfefgdgec"},
-    {"HAPPY BIRTHDAY", "ggagCbggagDCggGECbaFFECDC"},
+/* ch: the band under it, a letter where it plays a chord (C F G; D E A the minor ones), '-' where only the hat ticks */
+static const struct { const char *name, *notes, *ch; } SONG[] = {
+    {"TWINKLE TWINKLE", "ccggaagffeeddcggffeedggffeedccggaagffeeddc", "C-C-F-CF-C-G-CC-F-C-GC-F-C-GC-C-F-CF-C-G-C"},
+    {"MARY HAD A LAMB", "edcdeeedddeggedcdeeeeddedc", "C---C--G--C--C---C---G---C"},
+    {"ODE TO JOY", "eefggfedccdeeddeefggfedccdedcc", "C---G---C---G--C---G---C---GC-"},
+    {"FRERE JACQUES", "cdeccdecefgefggagfecgagfeccxccxc", "C---C---C--C--C---C-C---C-CGCCGC"},
+    {"ROW YOUR BOAT", "cccdeedefgCCCgggeeecccgfedc", "C----C----C-----C-----G---C"},
+    {"OLD MACDONALD", "cccxyyxeeddcxcccxyyxeeddc", "C---F-CC-G-C-C---F-CC-G-C"},
+    {"JINGLE BELLS", "eeeeeeegcdefffffeeeeddedgeeeeeeegcdefffffeeeggfdc", "C--C--C----F----C---G----C--C--C----F----C--G---C"},
+    {"LONDON BRIDGE", "gagfefgdefefggagfefgdgec", "C---C--G--C--C---C--G-C-"},
+    {"HAPPY BIRTHDAY", "ggagCbggagDCggGECbaFFECDC", "--C--G--G--C--C---F--C-GC"},
 };
 #define NSONG (sizeof SONG / sizeof SONG[0])
 static uint32_t song_pos;
@@ -729,6 +737,25 @@ static uint32_t pc_keys(uint32_t pcs, uint32_t from, uint32_t to)   /* the keys 
     return m;
 }
 
+static uint32_t tune_off;                       /* the band under a tune: its chord rings until then */
+static void tune_band(char c)                   /* she played the tune's next note: the band plays with her, at her pace */
+{
+    static const int8_t CH[7] = {5, -1, 0, 1, 2, 3, 4};   /* A C D E F G -> BCH */
+    uint32_t r, i, t[3];
+    if (c < 'A' || c > 'G' || CH[c - 'A'] < 0) { h_kit = 0; h_trig++; return; }   /* in between: the hat */
+    band_quiet();
+    r = BCH[CH[c - 'A']].pc;
+    t[0] = r; t[1] = r + (BCH[CH[c - 'A']].minor ? 3u : 4u); t[2] = r + 7u;
+    band_bass = (uint8_t)(48u + r);
+    play(band_bass, 4, S_BAND, 170);
+    for (i = 0; i < 3u; i++) {
+        band_comp[i] = (uint8_t)(55u + (t[i] + 5u) % 12u);
+        play(band_comp[i], 0, S_BAND, 80);
+    }
+    k_trig++;
+    tune_off = fm1_ms + 1800u;
+    if (!tune_off) tune_off = 1;
+}
 static uint8_t copy_note(void)                  /* COPY ME's notes: C D E, then G A, then the C above */
 {
     static const uint8_t POOL[6] = {7, 9, 11, 14, 16, 19};      /* (they sound well in any order) */
@@ -782,6 +809,27 @@ static void game_new(void)                      /* the next question */
         q_hi = minor;
         q_mask = 1u << pc | 1u << (pc + (minor ? 3u : 4u)) % 12u | 1u << (pc + 7u) % 12u;
         chord_seen = 0;
+        break;
+    }
+    case G_ALONG: {                             /* a short tune over the beat: a bar to listen, a bar to play it */
+        static const uint8_t POOL[5] = {7, 9, 11, 14, 16};      /* C D E G A: they fit in any order */
+        uint32_t m = 1u, n = 1u, at = rnd_n(5), bar = 4u * PPQ;
+        q_n = lvl + 2u;                         /* 3 notes .. 7 */
+        if (lvl <= 2u) m = lvl == 1u ? 0x15u : 0x55u;           /* on the beats first */
+        else
+            while (n < q_n) {                   /* then on any eighth, the first always on the one */
+                i = rnd_n(8);
+                if (!(m >> i & 1u)) { m |= 1u << i; n++; }
+            }
+        for (i = 0, n = 0; i < 8u; i++)
+            if (m >> i & 1u) {
+                al_slot[n] = (uint8_t)i;
+                q_note[n++] = POOL[at];
+                at = at == 0u ? 1u : at == 4u ? 3u : rnd_n(2) ? at + 1u : at - 1u;   /* a step up or down */
+            }
+        al_t0 = band_origin + ((tick - band_origin + PPQ / 2u) / bar + 1u) * bar;   /* the next bar line */
+        al_i = 0;
+        g_phase = P_CUE;
         break;
     }
     case G_TAP: {                               /* a rhythm on the drum: tap it back on any key */
@@ -855,7 +903,9 @@ static void game_key(uint32_t k)                /* a key went down */
     switch (game) {
     case G_TUNES:
         if (k != song_key(SONG[set.song % NSONG].notes[song_pos])) break;
+        tune_band(SONG[set.song % NSONG].ch[song_pos]);
         if (++song_pos >= song_len()) {
+            y_trig++;                           /* the last note: a cymbal */
             set.song = (uint8_t)((set.song + 1u) % NSONG);   /* on to the next tune */
             set_dirty = 1;
             song_pos = 0;
@@ -888,6 +938,11 @@ static void game_key(uint32_t k)                /* a key went down */
             }
         }
         break;
+    case G_ALONG:                               /* her bar: the notes in their order (a wrong key costs nothing) */
+        if (k != q_note[q_pos]) break;
+        if (++q_pos >= q_n) { hint_mask = 0; game_right(); }
+        else hint_mask = 1u << q_note[q_pos];
+        break;
     case G_TAP:
         if (q_pos < 8u) tap_t[q_pos++] = fm1_ms;
         if (q_pos >= q_n) {
@@ -908,7 +963,28 @@ static void game_key(uint32_t k)                /* a key went down */
 }
 static void game_run(uint32_t keys)             /* every pass of the main loop */
 {
+    if (tune_off && (int32_t)(fm1_ms - tune_off) >= 0) { band_quiet(); tune_off = 0; }   /* (the band under a tune rings out) */
     if (g_phase == P_DONE && (int32_t)(fm1_ms - g_t) >= 0) game_new();
+    if (game == G_ALONG && (int32_t)(tick - al_t0) >= 0) {
+        uint32_t pos = tick - al_t0, bar = 4u * PPQ;
+        if (g_phase == P_CUE) {                 /* the first bar: it plays the tune, the keys light */
+            while (al_i < q_n && pos >= al_slot[al_i] * (PPQ / 2u)) {
+                if (cue_on != 255u) stop(cue_on, cue_pi, S_CUE);
+                cue_on = 53u + q_note[al_i++];
+                cue_pi = cur_patch;
+                cue_off = fm1_ms + 220u;
+                play(cue_on, cue_pi, S_CUE, 256);
+            }
+            if (pos >= bar) { g_phase = P_WAIT; q_pos = 0; hint_mask = 1u << q_note[0]; }   /* the second: hers */
+        } else if (g_phase == P_WAIT && pos >= 2u * bar + PPQ / 2u) {   /* her bar is over, and a little more */
+            say("ONCE MORE");
+            if (g_miss < 9u) g_miss++;
+            al_t0 += 2u * bar;
+            al_i = 0;
+            hint_mask = 0;
+            g_phase = P_CUE;
+        }
+    }
     if (g_phase != P_WAIT) return;
     if (game == G_CHORD) {
         uint32_t k, pcs = 0, n = 0;
@@ -929,6 +1005,12 @@ static void game_enter(uint32_t g)
     q_pc = 99;
     stop_src(S_CUE);
     cue_on = 255;
+    if (game == G_ALONG) {                      /* its beat: the POP band's drums, and nothing else */
+        band = CLICK + 1u;
+        band_led = 0;
+        band_origin = tick;
+        band_step = 0xFFFFFFFFu;
+    } else if (band > CLICK) { band = 0; band_quiet(); }
     game_new();
 }
 static void game_text(char *big, char *small)   /* what the game shows */
@@ -954,6 +1036,10 @@ static void game_text(char *big, char *small)   /* what the game shows */
     case G_CHORD:
         sput(sput(big, NN[q_pc % 12u]), q_hi ? " MINOR" : " MAJOR");
         sput(small, "HOLD ITS THREE NOTES");
+        break;
+    case G_ALONG:
+        sput(big, g_phase == P_WAIT ? "YOUR TURN" : g_phase == P_DONE ? "YES!" : "LISTEN");
+        sput(small, g_phase == P_WAIT ? "PLAY IT WITH THE DRUMS" : "A TUNE OVER THE DRUMS");
         break;
     case G_TAP:
         sput(small, g_phase == P_CUE ? "LISTEN TO THE DRUM" : "TAP IT ON ANY KEY");
@@ -1416,13 +1502,13 @@ static void status_text(char *s)                /* what is going on, in one line
             p = sput(sput(p, STYLE[band - 2u].name), ": ");
             sput(p, band_led ? BCH[band_ch].name : "A LOW KEY LEADS");
         }
-    } else if (playing) sput(p, "YOUR RECORDING PLAYS");
-    else if (L.len) sput(p, "PLAY: HEAR YOUR RECORDING");
+    } else if (playing) sput(nput(sput(p, "SONG "), set.slot + 1u), " PLAYS");
+    else if (L.len) sput(nput(sput(p, "SONG "), set.slot + 1u), ": PLAY TO HEAR IT");
     else {
-        p = sput(p, "OCTAVE ");
+        p = sput(nput(sput(p, "SONG "), set.slot + 1u), "  OCT ");   /* (which of her songs REC and PLAY mean) */
         *p++ = oct < 0 ? '-' : '+';
         p = nput(p, (uint32_t)(oct < 0 ? -oct : oct));
-        nput(sput(p, "   SPEED "), bpm);
+        nput(sput(p, "  SPEED "), bpm);
     }
 }
 
@@ -1464,6 +1550,11 @@ static void echo_time(void)                     /* the echo answers an eighth no
     uint32_t f = 44100u * 30u / bpm;
     g_echo_len = f > ELEN - 1u ? ELEN - 1u : f;
 }
+static void song_load(void)                     /* her song set.slot, or an empty one */
+{
+    if (slot_load(set.slot, &L, sizeof L) || L.n > NEV || !L.len || !L.layers) L.len = 0, L.n = 0, L.layers = 0;
+    song_dirty = 0;
+}
 static void go_home(void)
 {
     loop_stop();
@@ -1495,10 +1586,15 @@ static void app_main(void)
     uint8_t held_note[27] = {0}, held_pi[27] = {0}, held[27] = {0};
     char line[40], big[40] = "", small[40] = "";
 
-    if (settings_load(&set, sizeof set)) { set.quiet = 0; set.letters = 1; set.song = 0; for (k = 0; k < NGAME; k++) set.lvl[k] = 1; }
+    if (settings_load(&set, sizeof set)) {      /* (or the settings of before PLAY ALONG and the songs: 9 bytes, the same start) */
+        if (settings_load(&set, 9)) { set.quiet = 0; set.letters = 1; set.song = 0; for (k = 0; k < NGAME; k++) set.lvl[k] = 1; }
+        set.lvl[G_ALONG] = 1;
+        set.slot = 0;
+    }
+    if (set.slot >= NSAVE) set.slot = 0;
     g_quiet = set.quiet ? 1 : 0;
     letters = set.letters ? 1 : 0;
-    if (slot_load(0, &L, sizeof L) || L.n > NEV || !L.len || !L.layers) L.len = 0, L.n = 0, L.layers = 0;
+    song_load();
     go_home();
     tick_ms = fm1_ms;
 
@@ -1574,7 +1670,8 @@ static void app_main(void)
                 game_new();
             }
         }
-        if (place && b & 1u << BTN_SEQ) {       /* in the games: the click on and off */
+        if (place && b & 1u << BTN_SEQ && game == G_ALONG) say("ITS DRUMS KEEP THE TIME");
+        else if (place && b & 1u << BTN_SEQ) {  /* in the games: the click on and off */
             band = band ? 0 : CLICK;
             band_origin = tick;
             band_step = 0xFFFFFFFFu;
@@ -1621,6 +1718,7 @@ static void app_main(void)
                 if (rec != R_IDLE) rec_close();
                 loop_stop();
                 L.len = 0; L.n = 0; L.layers = 0;
+                song_dirty = 1;
                 say("RECORDING ERASED");
             }
             if (rel & 1u << BTN_EDIT && !edit_done) {
@@ -1634,8 +1732,9 @@ static void app_main(void)
                 band_quiet();
                 draw_text_box(0, 112, 240, &FONT_S, "SAVING...", C_WHITE, 1);
                 wait_quiet();
-                slot_save(0, &L, sizeof L);
-                say(L.len ? "SAVED" : "SAVED (EMPTY)");
+                slot_save(set.slot, &L, sizeof L);
+                song_dirty = 0;
+                { char t[24]; sput(nput(sput(t, "SONG "), set.slot + 1u), L.len ? " SAVED" : " SAVED (EMPTY)"); say(t); }
                 status_drawn = ~0u;
                 prev = fm1_in.notes & 0x7FFFFFFu;
                 tick_ms = fm1_ms;
@@ -1680,8 +1779,27 @@ static void app_main(void)
         if ((e = fm1_enc_take(ENC_SELECT)) != 0 && place) {   /* which game */
             game_enter((uint32_t)(((int32_t)game + e % (int32_t)NGAME + (int32_t)NGAME) % (int32_t)NGAME));
             name_drawn = ~0u;
-        } else if (e)
-            say("SEL: THE GAMES");
+        } else if (e) {                         /* which of her songs: the one she leaves is kept */
+            char t[24];
+            if (rec != R_IDLE) rec_close();
+            loop_stop();
+            if (song_dirty) {
+                band = 0;
+                band_quiet();
+                draw_text_box(0, 112, 240, &FONT_S, "SAVING...", C_WHITE, 1);
+                wait_quiet();
+                slot_save(set.slot, &L, sizeof L);
+                song_dirty = 0;
+            }
+            set.slot = (uint8_t)(((int32_t)set.slot + e % (int32_t)NSAVE + (int32_t)NSAVE) % (int32_t)NSAVE);
+            set_dirty = 1;
+            song_load();
+            sput(nput(sput(t, "SONG "), set.slot + 1u), L.len ? "" : ": EMPTY");
+            say(t);
+            status_drawn = ~0u;
+            prev = fm1_in.notes & 0x7FFFFFFu;
+            tick_ms = fm1_ms;
+        }
         if ((e = fm1_enc_take(ENC_KNOB4)) != 0) { int32_t v = g_tone + e; g_tone = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); }
         if ((e = fm1_enc_take(ENC_KNOB2)) != 0) { int32_t v = g_len + e; g_len = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_len_on = 1; }
         if ((e = fm1_enc_take(ENC_KNOB3)) != 0) { int32_t v = g_wob + e; g_wob = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_wob_on = 1; }

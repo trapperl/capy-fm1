@@ -67,8 +67,11 @@ The tables in the [README](../README.md#playing) are complete. A few details:
   It is kept in time with SPEED: turn ALGORITHM and the recording, the band and the arp all go faster or slower
   together. With the band on, a new recording is trimmed to a whole number of beats.
 - **The arp is recorded too**: what goes into the recording is what sounded.
-- **SAVE** stops the sound for a moment (the FM-1 has to be quiet while it writes), then says SAVED. One recording
-  is kept. At power-on it is there again: PLAY.
+- **Four songs.** SELECT turns through SONG 1 to SONG 4; the screen says which one REC, PLAY, SAVE and EDIT
+  mean. Turning to another song keeps the one she leaves (the sound stops for a moment while it is written), so
+  the knob never loses a recording. Switching off does: **SAVE** first.
+- **SAVE** stops the sound for a moment (the FM-1 has to be quiet while it writes), then says SONG 2 SAVED. At
+  power-on the song she was on is there again: PLAY.
 - **EDIT** needs a full second's hold to erase everything; a tap only takes the last layer away.
 
 ## The games: the details

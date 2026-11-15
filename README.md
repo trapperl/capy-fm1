@@ -51,10 +51,11 @@ levels gained in the games, another baby moves in, up to five.
 | **ARP** | Held keys play one after the other. |
 | **SEQ** | Each press the next one: CLICK (a metronome, four in a bar), then the bands POP, BLUES, WALTZ, LULLABY, then off. A band plays first only its drums. A low key (F to E, marked orange on the screen) leads it: the bass and the chords play that key's chord until she picks another. The screen says the chord; the keys that fit glow, the others still play. |
 | **ALGORITHM** | SPEED of the band, the arp and the recording (60 to 180). |
+| **SELECT** | Which of her four songs: SONG 1 to SONG 4. REC, PLAY, SAVE and EDIT mean the one that shows; the song she turns away from is kept. |
 | **REC** | Record what you play. REC again and it goes round. REC while it plays adds a layer, with any instrument. |
 | **PLAY** | The recording on and off. |
 | **EDIT** | Tap: take the last layer away. Hold a second: erase the recording. |
-| **SAVE** | Keep the recording for next time. |
+| **SAVE** | Keep the song that shows for next time. |
 | **SEL** | The games. |
 | **HOME** | Back to the start: piano, everything off, and the pond, where OCT- and OCT+ step through its scenes. The recording is kept. |
 | **MASTER** | Volume. |
@@ -68,11 +69,12 @@ instrument, the knobs and the keys work as always.
 
 | Game | What she does | How it grows |
 | --- | --- | --- |
-| **TUNES** | The next key of a tune is green and waits for her; the screen says its letter. She plays every note. | Nine traditional tunes, one after the other. |
+| **TUNES** | The next key of a tune is green and waits for her; the screen says its letter. She plays every note, and a band plays with her, at her pace: a bass and a chord where the tune's chord comes, a tick of the hat in between. | Nine traditional tunes, one after the other. |
 | **FIND IT** | The screen shows a letter: find that key. A wrong key is named ("THAT WAS C"); after two, the right keys light. | C D E, then up to G, all white keys, the black keys. |
 | **COPY ME** | It plays a few notes, she plays them back. Each time right, one note more. | From 2 notes up to 12, on more keys. |
 | **HIGH LOW** | Two notes: was the second higher or lower? OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
 | **CHORDS** | The screen names a chord: hold its three notes. Stuck, and the keys light. | C F G, then the minor ones, then any key. |
+| **JOIN IN** | Drums play. For one bar it plays a short tune over them and the keys light; the next bar is hers: the same notes, each key lit as its turn comes. Not done by the bar's end, it comes round again. | From three notes on the beats to seven on any eighth. |
 | **TAP IT** | A drum plays a rhythm, shown as boxes: tap it back on any key. | Three slow hits up to six quick ones. |
 
 More in the [manual](docs/MANUAL.md).
