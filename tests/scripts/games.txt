@@ -1,4 +1,7 @@
 # The games: SEL goes in, SELECT picks one, HOME leaves.
+# (a key first: the pond at switching on stays until she picks something)
+100 keys 0x80
+150 keys 0
 300 btn 3
 600 shot
 # TUNES (Twinkle: c c g g)

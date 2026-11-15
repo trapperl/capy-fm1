@@ -41,7 +41,7 @@ FM-1 is wrapped up as a present.
 1. Switch it on. It says PIANO and waits. Nothing plays by itself.
 2. Play a key: the screen says its letter. Play C, E and G together: it says C MAJOR.
 3. Turn **PRESETS**: another instrument, with its name in its own colour.
-4. Turn **KNOB 1**: dark to bright. Turn **KNOB 4**: the echo comes on (the FX button lights). Press **FX**: off.
+4. Turn **KNOB 4**: dark to bright. Turn **KNOB 1**: the echo comes on (the FX button lights). Press **FX**: off.
 5. Press **SEQ**: a band plays. The screen says which chord it is on and which comes next, and the keys that fit
    glow. Play along. **SEQ** again for the next band; after the fourth it is off.
 6. Press **REC**, play a few notes, press **REC** again: it goes round. Turn **PRESETS** to BASS, press **REC**,
@@ -55,8 +55,8 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 - **Letters and chords.** The screen names what she holds. It knows major, minor, diminished, augmented and sus
   chords and the three common sevenths, in any order of the notes. **GLO** swaps the letters for the sound's wave
   and back; the choice is kept.
-- **The knobs and their buttons.** ENV, LFO and FX each switch one thing on and off; the knob next in line
-  (KNOB 2, 3, 4) sets how much. Turning a knob switches its thing on, so a knob never does nothing.
+- **The knobs and their buttons.** FX, ENV and LFO each switch one thing on and off; the knob above each
+  (KNOB 1, 2, 3) sets how much, and the screen shows them in the same order: ECHO, LENGTH, WOBBLE, then TONE (KNOB 4). Turning a knob switches its thing on, so a knob never does nothing.
 - **The band** never starts by itself and plays quietly under her. It stays in C, so the white keys fit; the glowing
   keys are the notes of the chord it is on. POP goes C, G, A minor, F; BLUES is a twelve-bar blues; WALTZ is in
   three; LULLABY has no drums.
@@ -70,7 +70,7 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 
 ## The games: the details
 
-- **The pond.** HOME and switching on show the capybaras' pond for three seconds (any key skips it); they blink, and the ones in the water bob. There is one
+- **The pond.** HOME and switching on show the capybaras' pond until she plays a key, presses a button or turns a knob; they blink, and the ones in the water bob. There is one
   baby to begin with; every three levels gained, over all the games together, another one moves in, up to five.
   The screen says so when it happens.
 - Every game starts at level 1 and moves up after five right answers; the level is kept over power-off. Nothing

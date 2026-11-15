@@ -15,7 +15,7 @@ Wren replaces the FM-1's firmware with a small keyboard instrument. What it hold
 
 A capybara and her baby sit beside the instrument's name. She sings when notes sound, nods to the band, blinks,
 and gets a yuzu on her head for a chord or a right answer (a right answer also makes every key's light breathe once, without
-a sound over hers). HOME (and switching on) shows their pond: every three
+a sound over hers). HOME (and switching on) shows their pond, which stays until she plays or picks something: every three
 levels gained in the games, another baby moves in, up to five.
 
 <p>
@@ -40,10 +40,10 @@ levels gained in the games, another baby moves in, up to five.
 | Keys | Play. Twelve notes at once. The screen names what she holds: one note's letter, several notes' letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
 | **PRESETS** | The instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE. |
 | **OCT-**, **OCT+** | Lower, higher. |
-| **KNOB 1** | TONE: dark to bright. |
+| **KNOB 1**, **FX** | ECHO. The knob sets how much, FX switches it on and off. |
 | **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much, ENV switches it on and off. |
 | **KNOB 3**, **LFO** | WOBBLE: vibrato. The knob sets how much, LFO switches it on and off. |
-| **KNOB 4**, **FX** | ECHO. The knob sets how much, FX switches it on and off. |
+| **KNOB 4** | TONE: dark to bright. |
 | **GLO** | The note letters (on the screen's keys, and what she holds), or the sound's wave instead. |
 | **ARP** | Held keys play one after the other. |
 | **SEQ** | The band: each press the next one, POP, BLUES, WALTZ, LULLABY, then off. Drums, bass and chords in C. The screen says the chord now and the next one; the keys that fit glow, the others still play. |

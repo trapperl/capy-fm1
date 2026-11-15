@@ -12,10 +12,10 @@
  *   keys        play (12 voices, two-operator FM). The screen names the note, the notes, or the chord she holds
  *   PRESETS     the instrument
  *   OCT- OCT+   the octave
- *   KNOB 1      TONE: dark .. bright
- *   KNOB 2      LENGTH: how long notes ring          ENV switches it on / off
- *   KNOB 3      WOBBLE: vibrato                      LFO switches it on / off
- *   KNOB 4      ECHO                                 FX  switches it on / off
+ *   KNOB 1      ECHO                                 FX  switches it on / off   (the knobs in the order of their
+ *   KNOB 2      LENGTH: how long notes ring          ENV switches it on / off    buttons below them: FX, ENV, LFO;
+ *   KNOB 3      WOBBLE: vibrato                      LFO switches it on / off    the screen shows the same order)
+ *   KNOB 4      TONE: dark .. bright
  *   GLO         the note letters (on the screen's keys, and what she holds), or the sound's wave
  *   ARP         held keys play one after the other
  *   SEQ         the band: POP, BLUES, WALTZ, LULLABY, off. Drums, bass and chords in C; the screen says the chord
@@ -881,7 +881,7 @@ static void game_text(char *big, char *small)   /* what the game shows */
 }
 
 /* ================================================================ the clock runs everything that keeps time */
-static void midi_in(void);
+static uint32_t midi_in(void);
 static uint32_t in_clock;
 static void clock_run(void)
 {
@@ -905,15 +905,17 @@ static uint32_t idle_ok;
 static void app_idle(void) { if (idle_ok) clock_run(); }
 
 static uint8_t midi_pi[128];
-static void midi_in(void)
+static uint32_t midi_in(void)                   /* 1: a note came in */
 {
     uint8_t st, d1, d2;
+    uint32_t got = 0;
     while (midi_get(&st, &d1, &d2) != 0) {
         uint32_t ty = st & 0xF0u;
         if (st >= 0xF0u || d1 > 127u) continue;
-        if (ty == 0x90u && d2) { midi_pi[d1] = cur_patch; live_on(d1, cur_patch, 0); }
+        if (ty == 0x90u && d2) { midi_pi[d1] = cur_patch; live_on(d1, cur_patch, 0); got = 1; }
         else if (ty == 0x80u || ty == 0x90u) live_off(d1, midi_pi[d1], 0);
     }
+    return got;
 }
 
 /* ================================================================ the screen */
@@ -1068,14 +1070,24 @@ static void draw_pond(const char *title)
     lcd_fill(112, 214, 8, 8, RGB(255, 170, 30));                    /* a yuzu in the water */
     lcd_fill(114, 212, 2, 2, RGB(70, 190, 70));
 }
-static void pond_show(const char *title, uint32_t ms)   /* the pond, alive, until a key or ms: they blink, the swimmers bob */
+static const uint8_t POND_ENC[4] = {ENC_KNOB1, ENC_KNOB2, ENC_KNOB3, ENC_KNOB4};
+static int32_t pond_presets;                    /* PRESETS turned at the pond: it leaves, and the turn still counts */
+static void pond_show(const char *title)        /* the pond, alive, until a key, a button or a knob: they blink, the swimmers bob */
 {
     uint32_t t0 = fm1_ms, frame = 0, i, n = babies();
     draw_pond(title);
+    for (i = 0; i < 4u; i++) (void)fm1_enc_take(POND_ENC[i]);   /* (turns from before the pond don't close it) */
+    (void)fm1_enc_take(ENC_PRESETS); (void)fm1_enc_take(ENC_SELECT); (void)fm1_enc_take(ENC_ALGORITHM);
     if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);   /* (hello: which Wren this is) */
-    while (fm1_ms - t0 < ms && !fm1_in.notes && !fm1_in.buttons) {
+    while (!fm1_in.notes && !fm1_in.buttons) {
         uint32_t f = (fm1_ms - t0) / 300u;
+        int32_t turned = 0, e;
         platform_poll();
+        if ((e = fm1_enc_take(ENC_PRESETS)) != 0) pond_presets += e, turned = 1;
+        for (i = 0; i < 4u; i++)
+            if (fm1_enc_take(POND_ENC[i])) turned = 1;
+        if (fm1_enc_take(ENC_SELECT) | fm1_enc_take(ENC_ALGORITHM)) turned = 1;
+        if (turned || midi_in()) break;         /* (a note over MIDI plays, and the pond leaves) */
         if (f == frame) continue;
         frame = f;
         draw_capy(0, 14, 62, 4, CAPY_YUZU | (f % 7u == 4u ? CAPY_BLINK : 0u), 20);
@@ -1096,10 +1108,10 @@ static void pond_show(const char *title, uint32_t ms)   /* the pond, alive, unti
 
 static void draw_knobs(void)                    /* the four knobs: their names, how far, lit when on */
 {
-    static const char *const NAME[4] = {"TONE", "LENGTH", "WOBBLE", "ECHO"};
+    static const char *const NAME[4] = {"ECHO", "LENGTH", "WOBBLE", "TONE"};   /* as the knobs, and FX ENV LFO under them */
     uint32_t val[4], on[4], i;
-    val[0] = g_tone; val[1] = g_len; val[2] = g_wob; val[3] = g_echo;
-    on[0] = 1; on[1] = g_len_on; on[2] = g_wob_on; on[3] = g_echo_on;
+    val[0] = g_echo; val[1] = g_len; val[2] = g_wob; val[3] = g_tone;
+    on[0] = g_echo_on; on[1] = g_len_on; on[2] = g_wob_on; on[3] = 1;
     cv_begin(240, 46, C_BLACK);
     for (i = 0; i < 4u; i++) {
         int32_t x = (int32_t)i * 60 + 6;
@@ -1207,7 +1219,7 @@ static void app_main(void)
     go_home();
     tick_ms = fm1_ms;
 
-    pond_show("HELLO!", 3000);    /* hello: the pond, until a key or three seconds */
+    pond_show("HELLO!");          /* hello: the pond, until she picks something */
     tick_ms = fm1_ms;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     for (;;) {
@@ -1348,7 +1360,7 @@ static void app_main(void)
             for (k = 0; k < 27u; k++)
                 if (held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
             go_home();
-            pond_show("HOME", 3000);            /* the capybaras' home, until a key or three seconds */
+            pond_show("HOME");                  /* the capybaras' home, until she picks something */
             lcd_fill(0, 0, 240, 240, C_BLACK);
             name_drawn = panel_drawn = keys_drawn = knobs_drawn = status_drawn = ~0u;
             was_held = 0;
@@ -1357,7 +1369,9 @@ static void app_main(void)
         }
 
         /* ---- the knobs */
-        if ((e = fm1_enc_take(ENC_PRESETS)) != 0) {
+        e = fm1_enc_take(ENC_PRESETS) + pond_presets;
+        pond_presets = 0;
+        if (e != 0) {
             cur_patch = (uint8_t)(((int32_t)cur_patch + e % (int32_t)NPATCH + (int32_t)NPATCH) % (int32_t)NPATCH);
             if (place) say(PATCH[cur_patch].name);
             knobs_drawn = keys_drawn = panel_drawn = ~0u;
@@ -1374,10 +1388,10 @@ static void app_main(void)
             name_drawn = ~0u;
         } else if (e)
             say("SEL: THE GAMES");
-        if ((e = fm1_enc_take(ENC_KNOB1)) != 0) { int32_t v = g_tone + e; g_tone = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); }
+        if ((e = fm1_enc_take(ENC_KNOB4)) != 0) { int32_t v = g_tone + e; g_tone = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); }
         if ((e = fm1_enc_take(ENC_KNOB2)) != 0) { int32_t v = g_len + e; g_len = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_len_on = 1; }
         if ((e = fm1_enc_take(ENC_KNOB3)) != 0) { int32_t v = g_wob + e; g_wob = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_wob_on = 1; }
-        if ((e = fm1_enc_take(ENC_KNOB4)) != 0) { int32_t v = g_echo + e; g_echo = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_echo_on = 1; }
+        if ((e = fm1_enc_take(ENC_KNOB1)) != 0) { int32_t v = g_echo + e; g_echo = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); g_echo_on = 1; }
 
         /* ---- the lights */
         {
