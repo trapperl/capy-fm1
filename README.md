@@ -97,11 +97,11 @@ pip3 install Pillow mido python-rtmidi
 tools/get_toolchain.sh
 git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
     https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
-./build.sh                                        # -> build/wren.fwsc
-python3 tools/fm1_install.py build/wren.fwsc      # over USB; asks before it writes
+./build.sh                                        # -> build/capy.fwsc
+python3 tools/fm1_install.py build/capy.fwsc      # over USB; asks before it writes
 ```
 
-Or let GitHub build it: every push to `main` runs `.github/workflows/release.yml` and keeps `wren.fwsc` as a build
+Or let GitHub build it: every push to `main` runs `.github/workflows/release.yml` and keeps `capy.fwsc` as a build
 artifact; a tag `v0.1` publishes a release.
 
 The instrument is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in

@@ -1,4 +1,4 @@
-# Wren (from Dinghy's workflow): build the packages on GitHub, run the host tests, and on a tag vX.Y publish the release with a build
+# Capy (from Dinghy's workflow): build the packages on GitHub, run the host tests, and on a tag vX.Y publish the release with a build
 # attestation (actions/attest-build-provenance): the Firmware Hub shows "Built from source" for exactly these files.
 # The JieLi toolchain comes from pkgman.jieliapp.com (tools/get_toolchain.sh), the AC79 SDK from gitee.com, as in
 # sloopDX's and OberVave's workflows. Run by hand (workflow_dispatch) for a test build without a release.
@@ -58,27 +58,27 @@ jobs:
           BOARD=smk37 MODEL=elite sh build.sh --release "$V"
           BOARD=smk37 MODEL=mke sh build.sh --release "$V"
           sh build.sh --release "$V"
-          ls -l build/wren-"$V"*.fwsc
-          (cd build && sha256sum wren-"$V"*.fwsc > SHA256SUMS)
+          ls -l build/capy-"$V"*.fwsc
+          (cd build && sha256sum capy-"$V"*.fwsc > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wren-fwsc
-          path: build/wren*.fwsc
+          name: capy-fwsc
+          path: build/capy*.fwsc
           if-no-files-found: error
 
       - name: Attest the packages (tags only)
         if: github.ref_type == 'tag'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: build/wren-[0-9]*.fwsc
+          subject-path: build/capy-[0-9]*.fwsc
 
-      # (the release builds only, not the dev ones: wren-smk37.fwsc – no comment inside the block below: it would be part of the pattern)
+      # (the release builds only, not the dev ones: capy-smk37.fwsc – no comment inside the block below: it would be part of the pattern)
       - name: Release (tags only)
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/wren-[0-9]*.fwsc
+            build/capy-[0-9]*.fwsc
             build/SHA256SUMS
           generate_release_notes: true

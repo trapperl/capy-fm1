@@ -4,11 +4,11 @@ For the grown-up who hands it over. The child needs none of this.
 
 ## Install
 
-1. Get `wren.fwsc`: from this repository's GitHub Actions run (the `wren-fwsc` artifact), from a release, or build it
+1. Get `capy.fwsc`: from this repository's GitHub Actions run (the `capy-fwsc` artifact), from a release, or build it
    (see the [README](../README.md#build-it)).
 2. Connect the FM-1 with a USB **data** cable and switch it on.
 3. Either:
-   - `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py wren.fwsc`. It asks before it writes.
+   - `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before it writes.
    - Or use a browser installer that takes a `.fwsc` file, such as the
      [FM-1 Firmware Hub](https://thefirmwarehub.com), in Chrome or Edge.
 4. Don't unplug it while it writes. The FM-1 restarts into Capy.

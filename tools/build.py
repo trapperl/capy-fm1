@@ -6,13 +6,13 @@
   tools/build.py [--release X.Y[-suffix]] [--board fm1|smk37] [--model pro|elite|mke]
 
 Outputs in build/: capy.bin (app), loader/ota.bin (update loader),
-wren.fwsc (package). See README.md for the toolchain and the SDK.
+capy.fwsc (package). See README.md for the toolchain and the SDK.
 
 --board smk37 (or BOARD=smk37) builds for the M-Vave SMK-37 (docs/SMK37.md): -DBOARD_SMK37=1 for the app and the
 loader, identity SMK-37 Pro_990 (release X.Y: SMK-37 Pro_99Y), the SMK flash layout (fm1pkg_make.py, app slot
-0x97400), the package build/wren-smk37.fwsc. --model elite / mke (or MODEL=) with smk37: the same build under the
+0x97400), the package build/capy-smk37.fwsc. --model elite / mke (or MODEL=) with smk37: the same build under the
 SMK-37 Elite's or the MKE-P37's model name (identity, loader and update record; -DSMK_MODEL), so M-Vave's updater
-still takes that unit's factory package: wren-smk37-elite.fwsc, -mke.fwsc. The default stays the FM-1.
+still takes that unit's factory package: capy-smk37-elite.fwsc, -mke.fwsc. The default stays the FM-1.
 
 The JieLi toolchain is Linux x86-64 only. JIELI_TOOLCHAIN points at it; on
 macOS (or with JIELI_DOCKER=1) each tool runs in a linux/amd64 container.
@@ -319,14 +319,14 @@ def main():
         BOARD_PREFIX[BOARD] = BOARD_PREFIX[BOARD].replace(MODELS["pro"], MODELS[model])
         suffix += "-" + model
     PRODUCT = BOARD_PREFIX[BOARD] + "0"
-    name = f"wren{suffix}.fwsc"
+    name = f"capy{suffix}.fwsc"
     if a.release:                   # one digit each: the identity has room for two (X.Y; a .Z only in the text)
         m = re.fullmatch(r"(\d)\.(\d)(\.\d)?(-[A-Za-z0-9]+)?", a.release)
         if not m:
             raise SystemExit(f"--release {a.release}: use X.Y, X.Y.Z or X.Y-suffix, one digit each")
         PRODUCT = BOARD_PREFIX[BOARD] + m[2]
         VERSION = m[1] + "." + m[2] + (m[3] or "")
-        name = f"wren-{a.release}{suffix}.fwsc"
+        name = f"capy-{a.release}{suffix}.fwsc"
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK
         if hashlib.sha256(fm1pkg_make.sdk_file(rel)).hexdigest() != sha:
