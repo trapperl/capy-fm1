@@ -1005,9 +1005,9 @@ static uint32_t babies(void)
         if (set.lvl[g] > 1u && set.lvl[g] <= GMAX[g]) ups += set.lvl[g] - 1u;
     return 1u + (ups / 3u > 4u ? 4u : ups / 3u);
 }
+static const int16_t SPOT[5][2] = {{128, 104}, {96, 170}, {182, 110}, {150, 184}, {46, 186}};   /* land, pond, land, pond, pond */
 static void draw_pond(const char *title)
 {
-    static const int16_t SPOT[5][2] = {{128, 104}, {70, 158}, {182, 110}, {140, 176}, {22, 172}};   /* land, pond, land, pond, pond */
     uint32_t i, n = babies();
     int32_t dy;
     lcd_fill(0, 0, 240, 240, C_BLACK);
@@ -1017,7 +1017,7 @@ static void draw_pond(const char *title)
         int32_t w = 0, q = 900 - dy * dy;
         while ((w + 1) * (w + 1) <= q) w++;                         /* sqrt(30^2 - dy^2) */
         w = w * 108 / 30;
-        lcd_fill((uint32_t)(120 - w), (uint32_t)(196 + dy), (uint32_t)(2 * w), 1, dy == -30 || dy % 11 == 5 ? RGB(110, 190, 240) : RGB(40, 120, 200));
+        lcd_fill((uint32_t)(120 - w), (uint32_t)(196 + dy), (uint32_t)(2 * w), 1, dy == -30 || dy % 11 == 9 ? RGB(110, 190, 240) : RGB(40, 120, 200));
     }
     draw_capy(0, 14, 62, 4, CAPY_YUZU, 20);                         /* the mother */
     for (i = 0; i < n; i++) {
@@ -1025,8 +1025,33 @@ static void draw_pond(const char *title)
         draw_capy(0, SPOT[i][0], SPOT[i][1], 2, 0, pond ? 12u : 20u);
         if (pond) lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)SPOT[i][1] + 24u, 52, 2, RGB(110, 190, 240));   /* a ripple */
     }
-    lcd_fill(196, 200, 8, 8, RGB(255, 170, 30));                    /* a yuzu in the water */
-    lcd_fill(198, 198, 2, 2, RGB(70, 190, 70));
+    lcd_fill(112, 214, 8, 8, RGB(255, 170, 30));                    /* a yuzu in the water */
+    lcd_fill(114, 212, 2, 2, RGB(70, 190, 70));
+}
+static void pond_show(const char *title, uint32_t ms)   /* the pond, alive, until a key or ms: they blink, the swimmers bob */
+{
+    uint32_t t0 = fm1_ms, frame = 0, i, n = babies();
+    draw_pond(title);
+    if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);   /* (hello: which Wren this is) */
+    while (fm1_ms - t0 < ms && !fm1_in.notes && !fm1_in.buttons) {
+        uint32_t f = (fm1_ms - t0) / 300u;
+        platform_poll();
+        if (f == frame) continue;
+        frame = f;
+        draw_capy(0, 14, 62, 4, CAPY_YUZU | (f % 7u == 4u ? CAPY_BLINK : 0u), 20);
+        for (i = 0; i < n; i++) {
+            int pond = i == 1u || i >= 3u;
+            uint32_t blink = (f + 2u * i) % 6u == 3u ? CAPY_BLINK : 0u;
+            if (pond) {                         /* up and down in the water, each in its own time */
+                int32_t y = SPOT[i][1] + ((f + i) & 1u ? 2 : 0);
+                lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)SPOT[i][1] + 8u, 52, 22, RGB(40, 120, 200));
+                draw_capy(0, SPOT[i][0], y, 2, blink, 12);
+                lcd_fill((uint32_t)SPOT[i][0] - 2u, (uint32_t)y + 24u, 52, 2, RGB(110, 190, 240));
+            } else
+                draw_capy(0, SPOT[i][0], SPOT[i][1], 2, blink, 20);
+            platform_poll();
+        }
+    }
 }
 
 static void draw_knobs(void)                    /* the four knobs: their names, how far, lit when on */
@@ -1142,9 +1167,7 @@ static void app_main(void)
     go_home();
     tick_ms = fm1_ms;
 
-    draw_pond("HELLO!");                        /* hello: the pond, until a key or two seconds */
-    draw_text_box(0, 42, 240, &FONT_S, "WREN " APP_VER, C_GREY, 1);
-    while (fm1_ms - tick_ms < 2000u && !fm1_in.notes && !fm1_in.buttons) platform_poll();
+    pond_show("HELLO!", 3000);    /* hello: the pond, until a key or three seconds */
     tick_ms = fm1_ms;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     for (;;) {
@@ -1285,8 +1308,7 @@ static void app_main(void)
             for (k = 0; k < 27u; k++)
                 if (held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
             go_home();
-            draw_pond("HOME");                  /* the capybaras' home, until a key or two seconds */
-            for (home_t = fm1_ms; fm1_ms - home_t < 2000u && !fm1_in.notes && !fm1_in.buttons;) platform_poll();
+            pond_show("HOME", 3000);            /* the capybaras' home, until a key or three seconds */
             lcd_fill(0, 0, 240, 240, C_BLACK);
             name_drawn = panel_drawn = keys_drawn = knobs_drawn = status_drawn = ~0u;
             was_held = 0;

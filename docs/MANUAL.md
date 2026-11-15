@@ -70,7 +70,7 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 
 ## The games: the details
 
-- **The pond.** HOME and switching on show the capybaras' pond for two seconds (any key skips it). There is one
+- **The pond.** HOME and switching on show the capybaras' pond for three seconds (any key skips it); they blink, and the ones in the water bob. There is one
   baby to begin with; every three levels gained, over all the games together, another one moves in, up to five.
   The screen says so when it happens.
 - Every game starts at level 1 and moves up after five right answers; the level is kept over power-off. Nothing

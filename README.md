@@ -24,6 +24,7 @@ levels gained in the games, another baby moves in, up to five.
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
+<img src="docs/pond.gif" width="160" alt="The pond, moving">
 </p>
 
 > **Status: 0.2, not yet run on a real FM-1.** Everything here was checked in the host simulator
