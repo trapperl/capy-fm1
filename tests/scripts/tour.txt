@@ -1,0 +1,67 @@
+# A tour of Wren: piano chord, bells, echo, a recording with a layer, the beat, the arp, a tune, save, home.
+# buttons: 0 OCT- 1 OCT+ 2 FX 3 SEL 4 ENV 5 LFO 6 EDIT 7 GLO 8 HOME 9 SAVE 10 ARP 11 SEQ 12 PLAY 13 REC
+# encoders: 0 SELECT 1 ALGORITHM 2..5 KNOB1..4 6 PRESETS      keys: bit k, 0 = F3 (C4 = 0x80)
+200 keys 0x80
+500 keys 0x4880
+900 shot
+1400 keys 0
+# bells with echo
+1600 enc 6 2
+1700 btn 2
+1800 keys 0x80000
+2100 keys 0
+2200 shot
+3200 btn 2
+3300 enc 6 -2
+# record four piano notes, REC again: it goes round
+3500 btn 13
+3600 shot
+3800 keys 0x80
+4000 keys 0
+4100 keys 0x800
+4300 keys 0
+4400 keys 0x4000
+4600 keys 0
+4700 keys 0x800
+4900 keys 0
+5000 btn 13
+5200 shot
+# a bass layer on top
+6300 enc 6 4
+6400 btn 13
+6500 keys 0x80
+7000 keys 0
+7600 btn 13
+7700 shot
+# the beat, faster
+9000 btn 11
+9200 enc 1 5
+9300 shot
+11500 btn 11
+11600 btn 12
+# the arp on strings
+11800 enc 6 1
+11900 btn 10
+12000 keys 0x4880
+13500 shot
+14000 keys 0
+14100 btn 10
+# a tune: follow the lights (Mary had a little lamb: e d c d)
+14300 enc 0 1
+14500 shot
+14600 keys 0x800
+14700 keys 0
+14800 keys 0x200
+14900 keys 0
+15000 keys 0x80
+15100 keys 0
+15300 shot
+15400 btn 3
+# undo the bass layer, save, home
+15600 btn 6
+15800 btn 9
+18800 shot
+19000 btn 8
+19300 btn 12
+21500 shot
+22000 end
