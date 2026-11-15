@@ -38,7 +38,7 @@ levels gained in the games, another baby moves in, up to five.
 | Control | What it does |
 | --- | --- |
 | Keys | Play. Twelve notes at once. The screen names what she holds: one note's letter, several notes' letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
-| **PRESETS** | The instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE. |
+| **PRESETS** | The instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE, and DRUMS: a drum kit on the keys (C kick, D snare, E clap, F and G toms, A hat, B cymbal, the black keys sticks), each named on the screen as she hits it. |
 | **OCT-**, **OCT+** | Lower, higher. |
 | **KNOB 1**, **FX** | ECHO. The knob sets how much, FX switches it on and off. |
 | **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much, ENV switches it on and off. |
@@ -46,7 +46,7 @@ levels gained in the games, another baby moves in, up to five.
 | **KNOB 4** | TONE: dark to bright. |
 | **GLO** | The note letters (on the screen's keys, and what she holds), or the sound's wave instead. |
 | **ARP** | Held keys play one after the other. |
-| **SEQ** | The band: each press the next one, POP, BLUES, WALTZ, LULLABY, then off. First only its drums. A low key (F to E, marked orange on the screen) leads it: the bass and the chords play that key's chord until she picks another. The screen says the chord; the keys that fit glow, the others still play. |
+| **SEQ** | Each press the next one: CLICK (a metronome, four in a bar), then the bands POP, BLUES, WALTZ, LULLABY, then off. A band plays first only its drums. A low key (F to E, marked orange on the screen) leads it: the bass and the chords play that key's chord until she picks another. The screen says the chord; the keys that fit glow, the others still play. |
 | **ALGORITHM** | SPEED of the band, the arp and the recording (60 to 180). |
 | **REC** | Record what you play. REC again and it goes round. REC while it plays adds a layer, with any instrument. |
 | **PLAY** | The recording on and off. |
@@ -59,7 +59,8 @@ levels gained in the games, another baby moves in, up to five.
 
 ## The games
 
-**SEL** goes in, **SELECT** picks the game, **SEL** again asks for another question, **HOME** leaves. The
+**SEL** goes in, **SELECT** picks the game, **SEL** again asks for another question, **SEQ** switches the click (a
+metronome) on and off, **HOME** leaves. The
 instrument, the knobs and the keys work as always.
 
 | Game | What she does | How it grows |

@@ -18,7 +18,7 @@
  *   KNOB 4      TONE: dark .. bright
  *   GLO         the note letters (on the screen's keys, and what she holds), or the sound's wave
  *   ARP         held keys play one after the other
- *   SEQ         the band: POP, BLUES, WALTZ, LULLABY, off. First only its drums; a low key (F to E, marked on
+ *   SEQ         CLICK (a metronome), then the band: POP, BLUES, WALTZ, LULLABY, off. First only its drums; a low key (F to E, marked on
  *               the screen) leads it: bass and chords play that key's chord until she picks another, the keys that
  *               fit glow                                           ALGORITHM: the SPEED of band, arp and recording
  *   REC         record what you play; REC again: it goes round. REC while it plays: add a layer
@@ -60,7 +60,8 @@ typedef struct {
     uint16_t gain;                              /* Q15 */
 } patch_t;
 
-#define NPATCH 8u
+#define NPATCH 9u
+#define PI_DRUMS 8u                             /* the drum kit: its keys are drums (drum_hit), never a voice */
 static const patch_t PATCH[NPATCH] = {
     /* name      colour               tr  ratio ipk   isus itau arate    dtau sus    rtau fb   fol vib gain */
     {"PIANO",   RGB(255, 255, 255),   0,  256,  980,  180, 5,  3043486, 10,  0,     4,   0,   0,  0,  9000},
@@ -71,6 +72,7 @@ static const patch_t PATCH[NPATCH] = {
     {"STRINGS", RGB(255, 110, 130),   0,  256,  520,  0,   0,  50725,   0,   32767, 6,   290, 1,  2,  6000},
     {"BRASS",   RGB(255, 215, 0),     0,  256,  1040, 0,   0,  101450,  6,   24000, 3,   200, 1,  0,  7000},
     {"FLUTE",   RGB(130, 255, 170),   12, 256,  200,  200, 0,  202899,  0,   32767, 3,   0,   0,  3,  9000},
+    {"DRUMS",   RGB(255, 90, 60),     0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
 };
 
 /* exp(-1 / (tau * 1378.125)) in Q20, tau = 0.03 0.05 0.08 0.12 0.2 0.3 0.5 0.8 1.2 2 3 4.5 7 10 15 22 s */
@@ -92,6 +94,8 @@ static struct {
 static volatile uint8_t g_tone = 8, g_len = 13, g_len_on, g_wob = 8, g_wob_on, g_echo = 9, g_echo_on, g_quiet;
 static volatile uint32_t g_echo_len = 13230;    /* frames: an eighth note */
 static volatile uint32_t k_trig, s_trig, h_trig;   /* the drums */
+static volatile uint32_t t_trig, t_hi, y_trig, p_trig, h_kit;   /* the kit's toms (t_hi: the high one), cymbal, clap */
+static volatile uint32_t c_trig, c_one;         /* the click; c_one: this one is the bar's first, higher */
 static int16_t ebuf[ELEN] __attribute__((section(".pool")));
 static int16_t hist[512];                       /* the last frames, for the scope */
 static volatile uint32_t hist_w;
@@ -110,7 +114,8 @@ static void app_audio(int32_t *out, uint32_t n)
 {
     static int32_t mono[256];
     static uint32_t lfo_ph, ew, k_seen, s_seen, h_seen, k_ph, k_sw, s_ph, rnd = 1;
-    static int32_t k_amp, s_amp, h_amp, h_prev;
+    static int32_t k_amp, s_amp, h_amp, h_prev, c_amp, t_amp, y_amp, p_amp;
+    static uint32_t c_seen, c_ph, c_inc, t_seen, t_ph, t_inc, t_sw, y_seen, p_seen;
     uint32_t sb, v, i, elen = g_echo_len, tone = g_tone;
     int32_t loff = g_len_on ? ((int32_t)g_len - 8) / 2 : 0, wet = g_echo_on ? (int32_t)g_echo * 1400 : 0;
     int32_t quiet = g_quiet;
@@ -176,8 +181,12 @@ static void app_audio(int32_t *out, uint32_t n)
     /* the drums: a kick (a sine falling from 180 to 50 Hz), a snare (noise and a tone), a hat (bright noise) */
     if (k_trig != k_seen) { k_seen = k_trig; k_amp = 30000; k_sw = 12660000u; k_ph = 0; }
     if (s_trig != s_seen) { s_seen = s_trig; s_amp = 22000; }
-    if (h_trig != h_seen) { h_seen = h_trig; h_amp = 9000; }
-    if (k_amp > 16 || s_amp > 16 || h_amp > 16)
+    if (h_trig != h_seen) { h_seen = h_trig; h_amp = h_kit ? 20000 : 9000; }   /* (in the band the hat stays behind) */
+    if (c_trig != c_seen) { c_seen = c_trig; c_amp = 15000; c_ph = 0; c_inc = c_one ? 171409500u : 114435400u; }   /* A6, D6 */
+    if (t_trig != t_seen) { t_seen = t_trig; t_amp = 26000; t_ph = 0; t_inc = t_hi ? 13634810u : 8765235u; t_sw = t_inc + (t_inc >> 1); }   /* 140, 90 Hz */
+    if (y_trig != y_seen) { y_seen = y_trig; y_amp = 18000; }
+    if (p_trig != p_seen) { p_seen = p_trig; p_amp = 30000; }
+    if (k_amp > 16 || s_amp > 16 || h_amp > 16 || c_amp > 16 || t_amp > 16 || y_amp > 16 || p_amp > 16)
         for (i = 0; i < n; i++) {
             int32_t nz, x = 0;
             rnd = rnd * 1664525u + 1013904223u;
@@ -196,6 +205,25 @@ static void app_audio(int32_t *out, uint32_t n)
             if (h_amp > 16) {
                 x += ((nz - h_prev) * h_amp) >> 16;
                 h_amp -= (h_amp >> 9) + 1;
+            }
+            if (t_amp > 16) {                   /* a tom: a sine falling to its note */
+                t_ph += t_inc + t_sw;
+                t_sw -= t_sw >> 10;
+                x += (sine(t_ph) * t_amp) >> 16;
+                t_amp -= (t_amp >> 12) + 1;
+            }
+            if (y_amp > 16) {                   /* the cymbal: the hat's noise, ringing on */
+                x += ((nz - h_prev) * y_amp) >> 16;
+                y_amp -= (y_amp >> 13) + 1;
+            }
+            if (p_amp > 16) {                   /* the clap: a short burst of noise */
+                x += ((nz + h_prev) * p_amp) >> 17;   /* (its highs taken off: a hand, not a hiss) */
+                p_amp -= (p_amp >> 10) + 1;
+            }
+            if (c_amp > 16) {                   /* the click: a short high tick */
+                c_ph += c_inc;
+                x += (sine(c_ph) * c_amp) >> 16;
+                c_amp -= (c_amp >> 8) + 1;
             }
             h_prev = nz;
             mono[i] += x;
@@ -244,11 +272,32 @@ static const uint32_t INC_C9[12] = {            /* MIDI 120..131; lower octaves 
 static uint32_t ages;
 enum { S_LIVE, S_LOOP, S_BAND, S_CUE };         /* who plays a voice: the keys, the recording, the band, a game */
 
+/* the drum kit: every octave the same seven drums on its white keys, the sticks on the black ones */
+static const char *const DRUM_NAME[12] = {"KICK", "STICKS", "SNARE", "STICKS", "CLAP", "LOW TOM", "STICKS", "HIGH TOM",
+                                          "STICKS", "HAT", "STICKS", "CYMBAL"};
+static uint8_t drum_pc;                         /* the last one she hit, for the screen */
+static uint32_t drum_n, drum_ms;
+static void drum_hit(uint32_t note, uint32_t src)
+{
+    uint32_t pc = note % 12u;
+    switch (pc) {
+    case 0: k_trig++; break;
+    case 2: s_trig++; break;
+    case 4: p_trig++; break;
+    case 5: t_hi = 0; t_trig++; break;
+    case 7: t_hi = 1; t_trig++; break;
+    case 9: h_kit = 1; h_trig++; break;
+    case 11: y_trig++; break;
+    default: c_one = 0; c_trig++; break;
+    }
+    if (src == 0u) { drum_pc = (uint8_t)pc; drum_n++; drum_ms = fm1_ms; }   /* (0: S_LIVE) */
+}
 static void play(uint32_t note, uint32_t pi, uint32_t src, uint32_t vol)
 {
     uint32_t v, pick = 0, best = 0xFFFFFFFFu;
     int32_t n;
     if (note > 127u) return;
+    if (pi == PI_DRUMS) { drum_hit(note, src); return; }
     for (v = 0; v < NV; v++) {                  /* the same note again, else a silent voice, else a released, else the oldest */
         uint32_t score;
         if (voice[v].note == note && voice[v].src == src && voice[v].pi == pi && voice[v].stage) score = 0;
@@ -347,7 +396,8 @@ typedef struct {
     uint16_t kick, snare, hat, bass, comp, arp; /* bit s: on sixteenth s of the bar */
     uint8_t walk;                               /* the bass walks up the chord */
 } style_t;
-#define NSTYLE 4u
+#define NSTYLE 4u                               /* band: 0 off, 1 the click (a metronome), 2.. STYLE[band - 2] */
+#define CLICK 1u
 static const style_t STYLE[NSTYLE] = {
     {"POP", 16, 0x0501, 0x1010, 0x5555, 0x0541, 0x1041, 0, 0},
     {"BLUES", 16, 0x0101, 0x1010, 0x5555, 0x1111, 0x4444, 0, 1},
@@ -356,6 +406,7 @@ static const style_t STYLE[NSTYLE] = {
 };
 #define LEAD_KEYS 12u                           /* the keys that lead the band: F3..E4 as printed (any octave) */
 static uint32_t band_origin, band_step = 0xFFFFFFFFu, band_ch;
+static uint8_t click_mute;                      /* TAP IT's rhythm is heard alone */
 static uint8_t band_led;                        /* she has picked a chord: the bass and the chords play */
 static uint8_t band_bass = 255, band_comp[3] = {255, 255, 255}, band_arp = 255;
 static uint32_t chord_pcs(uint32_t ch)          /* bit = pitch class of a chord tone */
@@ -374,16 +425,20 @@ static void band_run(void)
     const style_t *y;
     uint32_t st, s, r, third, i;
     if (!band) return;
-    y = &STYLE[band - 1u];
     st = (tick - band_origin) / (PPQ / 4u);
     if (st == band_step) return;
     band_step = st;
+    if (band == CLICK) {                        /* four in a bar, the first one higher */
+        if (st % 4u == 0u && !click_mute) { c_one = st % 16u == 0u; c_trig++; }
+        return;
+    }
+    y = &STYLE[band - 2u];
     s = st % y->spb;
     r = BCH[band_ch].pc;
     third = BCH[band_ch].minor ? 3u : 4u;
     if (y->kick >> s & 1u) k_trig++;
     if (y->snare >> s & 1u) s_trig++;
-    if (y->hat >> s & 1u) h_trig++;
+    if (y->hat >> s & 1u) { h_kit = 0; h_trig++; }
     if (!band_led) return;                      /* the drums alone, until she leads */
     if (y->bass >> s & 1u) {
         static const uint8_t WALK[4] = {0, 4, 7, 9};
@@ -414,7 +469,7 @@ static void band_lead(uint32_t k, uint32_t keys)   /* key k (0 = F) went down wi
     static const int8_t CH[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 4};   /* by pitch class: C Dm Em F G Am, B: G */
     int32_t ch;
     uint32_t r, third, t[3], i;
-    if (!band || k >= LEAD_KEYS) return;
+    if (band <= CLICK || k >= LEAD_KEYS) return;
     for (k = 0; !(keys >> k & 1u); k++) ;       /* the lowest key held leads: C E G in the low keys is C, not E minor */
     ch = CH[(53u + k) % 12u];
     if (ch < 0 || (band_led && (uint32_t)ch == band_ch)) return;
@@ -425,7 +480,7 @@ static void band_lead(uint32_t k, uint32_t keys)   /* key k (0 = F) went down wi
     third = BCH[ch].minor ? 3u : 4u;
     band_bass = (uint8_t)(48u + r);
     play(band_bass, 4, S_BAND, 190);
-    if (STYLE[band - 1u].comp) {
+    if (STYLE[band - 2u].comp) {
         t[0] = r; t[1] = r + third; t[2] = r + 7u;
         for (i = 0; i < 3u; i++) {
             band_comp[i] = (uint8_t)(55u + (t[i] + 5u) % 12u);
@@ -1163,8 +1218,11 @@ static void status_text(char *s)                /* what is going on, in one line
     else if (rec == R_FIRST) sput(p, "RECORDING");
     else if (rec == R_DUB) nput(sput(p, "RECORDING LAYER "), L.layers);
     else if (band) {                            /* the chord now and the one coming: what fits */
-        p = sput(sput(p, STYLE[band - 1u].name), ": ");
-        sput(p, band_led ? BCH[band_ch].name : "A LOW KEY LEADS");
+        if (band == CLICK) nput(sput(p, "CLICK   SPEED "), bpm);
+        else {
+            p = sput(sput(p, STYLE[band - 2u].name), ": ");
+            sput(p, band_led ? BCH[band_ch].name : "A LOW KEY LEADS");
+        }
     } else if (playing) sput(p, "YOUR RECORDING PLAYS");
     else if (L.len) sput(p, "PLAY: HEAR YOUR RECORDING");
     else {
@@ -1187,6 +1245,11 @@ static uint32_t held_text(char *big, char *small)   /* returns a number that cha
             note[j] = voice[v].note;
             n++;
         }
+    if (cur_patch == PI_DRUMS && drum_n && fm1_ms - drum_ms < 500u) {   /* the drum she hit, by name */
+        sput(big, DRUM_NAME[drum_pc]);
+        small[0] = 0;
+        return 0x40000000u | (drum_n << 1) | 1u;
+    }
     if (!n) return 0;
     sig = n << 24;
     for (i = 0; i < n; i++) { pcs |= 1u << note[i] % 12u; sig = sig * 31u + note[i]; }
@@ -1275,6 +1338,7 @@ static void app_main(void)
             if (up >> k & 1u && held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
         }
         if (place) game_run(keys);
+        click_mute = place && game == G_TAP;
 
         /* ---- the buttons: each does what is printed on it */
         b = fm1_input_edges(&rel);
@@ -1315,9 +1379,15 @@ static void app_main(void)
                 game_new();
             }
         }
-        if (place && b & (1u << BTN_ARP | 1u << BTN_SEQ | 1u << BTN_REC | 1u << BTN_PLAY | 1u << BTN_SAVE | 1u << BTN_EDIT))
+        if (place && b & 1u << BTN_SEQ) {       /* in the games: the click on and off */
+            band = band ? 0 : CLICK;
+            band_origin = tick;
+            band_step = 0xFFFFFFFFu;
+            say(band ? "CLICK ON" : "CLICK OFF");
+        }
+        if (place && b & (1u << BTN_ARP | 1u << BTN_REC | 1u << BTN_PLAY | 1u << BTN_SAVE | 1u << BTN_EDIT))
             say("HOME: BACK TO PLAYING");
-        else {
+        else if (!place) {
             if (b & 1u << BTN_ARP) {
                 arp_on = !arp_on;
                 for (k = 0; k < 27u; k++)       /* the keys held now are the arp's from here */
@@ -1325,7 +1395,7 @@ static void app_main(void)
                 say(arp_on ? "ARP ON: HOLD SOME KEYS" : "ARP OFF");
             }
             if (b & 1u << BTN_SEQ) {            /* the band: each press the next one, then off */
-                band = (uint8_t)((band + 1u) % (NSTYLE + 1u));
+                band = (uint8_t)((band + 1u) % (NSTYLE + 2u));
                 band_quiet();
                 band_origin = playing ? loop_t0 : tick;   /* its "one" is now, or the recording's */
                 band_step = 0xFFFFFFFFu;
@@ -1401,6 +1471,7 @@ static void app_main(void)
         pond_presets = 0;
         if (e != 0) {
             cur_patch = (uint8_t)(((int32_t)cur_patch + e % (int32_t)NPATCH + (int32_t)NPATCH) % (int32_t)NPATCH);
+            if (place && cur_patch == PI_DRUMS) cur_patch = e > 0 ? 0 : PI_DRUMS - 1u;   /* (the games ask for notes: no drums there) */
             if (place) say(PATCH[cur_patch].name);
             knobs_drawn = keys_drawn = panel_drawn = ~0u;
         }
@@ -1428,13 +1499,14 @@ static void app_main(void)
                 if (voice[k].gate && voice[k].note >= base && voice[k].note < base + 27
                     && (voice[k].src == S_LIVE || voice[k].src == S_LOOP || (voice[k].src == S_CUE && !cue_hide && voice[k].note == cue_on)))
                     lit |= 1u << (voice[k].note - base);
+            if (cur_patch == PI_DRUMS && !arp_on && !place) lit |= keys;   /* (drums are no voices: the keys she holds) */
         }
         if (place) {
             goal = hint_mask;
             if (game == G_TUNES) goal = 1u << song_key(SONG[set.song % NSONG].notes[song_pos]);
             glow = 1u << 7 | 1u << 19;          /* C4, C5: to find your way */
         } else
-            glow = band && band_led ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
+            glow = band > CLICK && band_led ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
         {
             static uint32_t breathing;
             uint32_t left = flash_until - fm1_ms, lvl = 0;
@@ -1515,7 +1587,7 @@ static void app_main(void)
             draw_text_box(0, 112, 240, &FONT_S, line, (int32_t)(msg_until - fm1_ms) > 0 ? C_WHITE : C_TXT, 1);
         }
         hash = lit * 2654435761u ^ goal * 40503u ^ letters ^ (band && !place ? glow * 7919u + band + 256u * band_led : 0u);
-        if (hash != keys_drawn) { keys_drawn = hash; draw_keys(lit, goal, band && !place && band_led ? glow : 0u, PATCH[cur_patch].col, band && !place); }
+        if (hash != keys_drawn) { keys_drawn = hash; draw_keys(lit, goal, band > CLICK && !place && band_led ? glow : 0u, PATCH[cur_patch].col, band > CLICK && !place); }
         hash = g_tone | (uint32_t)g_len << 5 | (uint32_t)g_wob << 10 | (uint32_t)g_echo << 15
              | (uint32_t)g_len_on << 20 | (uint32_t)g_wob_on << 21 | (uint32_t)g_echo_on << 22;
         if (hash != knobs_drawn) { knobs_drawn = hash; draw_knobs(); }

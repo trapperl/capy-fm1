@@ -82,7 +82,8 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 - A wrong answer brings the same question again. Twice wrong and it helps: the right keys light (FIND IT, CHORDS),
   the notes light as they are played again (HIGH LOW), or the tune gets a note shorter (COPY ME).
 - The questions are made up as it goes, so there is no last one.
-- In the games REC, PLAY, SAVE, EDIT, ARP and SEQ say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
+- In the games SEQ switches the click on and off (TAP IT's rhythm is heard without it), and DRUMS is left out of
+  the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
   the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
 - The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
   Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.
