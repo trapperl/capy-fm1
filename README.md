@@ -37,9 +37,8 @@ three levels gained in the games, another baby moves into the pond, up to five.
 Capy runs on an FM-1, but installing firmware is at your own risk. Do it with a computer nearby, and read
 [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first.
 
-1. Get `capy.fwsc`: from the [releases](https://github.com/trapperl/capy-fm1/releases) if there is one, otherwise
-   from the newest run under [Actions](https://github.com/trapperl/capy-fm1/actions) (the `capy-fwsc` artifact;
-   GitHub asks you to sign in for that), or [build it](#build-it).
+1. Get `capy.fwsc` from the newest run under [Actions](https://github.com/trapperl/capy-fm1/actions) (the
+   `capy-fwsc` artifact; GitHub asks you to sign in for that), or [build it](#build-it).
 2. Connect the FM-1 with a USB **data** cable and switch it on.
 3. Install it: `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before
    it writes. A browser installer that takes a `.fwsc` file works too.
@@ -114,7 +113,7 @@ python3 tools/fm1_install.py build/capy.fwsc      # over USB; asks before it wri
 ```
 
 **Or let GitHub build it.** Every push to `main` runs `.github/workflows/release.yml` and keeps `capy.fwsc` as a
-build artifact; a tag such as `v0.3` publishes a release.
+build artifact.
 
 ## Licence
 

@@ -4,7 +4,7 @@ For the grown-up who hands it over. The child needs none of this.
 
 ## Install
 
-1. Get `capy.fwsc`: from this repository's GitHub Actions run (the `capy-fwsc` artifact), from a release, or build it
+1. Get `capy.fwsc`: from this repository's GitHub Actions run (the `capy-fwsc` artifact), or build it
    (see the [README](../README.md#build-it)).
 2. Connect the FM-1 with a USB **data** cable and switch it on.
 3. Either:
