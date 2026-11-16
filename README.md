@@ -5,12 +5,12 @@
 Capy replaces the FM-1's firmware with a small keyboard instrument made for a young child:
 
 - **Nine instruments with their real names:** piano, organ, bells, guitar, bass, strings, brass, flute and a drum
-  kit. The screen names every note and chord she plays, so what she learns here is true at any piano.
-- **A band she leads.** It starts with its drums alone. One low key picks the chord, and the bass and the chords
-  follow her.
+  kit. The screen names every note and chord played, so what a child learns here is true at any piano.
+- **A band the child leads.** It starts with its drums alone. One low key picks the chord, and the bass and the
+  chords follow.
 - **Seven games that don't run out.** They make their questions up, get a little harder after five right answers
   and remember their level. A wrong answer takes nothing away.
-- **Four songs of her own,** recorded in layers with any instrument.
+- **Four songs to record,** in layers, with any instrument.
 - **A pond of capybaras** as the home screen.
 
 <p>
@@ -78,15 +78,15 @@ check before you hand it over, and a first five minutes with it.
 **SEL** opens the games, **SELECT** picks one, **SEL** again asks for another question, **SEQ** switches a
 metronome click on and off, and **HOME** leaves. The instruments, the knobs and the keys work as always.
 
-| Game | What she does | How it grows |
+| Game | How it is played | How it grows |
 | --- | --- | --- |
-| **TUNES** | The next key of a tune lights green and waits for her, and the screen says its letter. As she plays each note a band plays along at her pace. | Nine traditional tunes, one after the other. |
-| **FIND IT** | The screen shows a letter; she finds that key. A wrong key is named ("THAT WAS C"), and after two tries the right keys light up. | C D E, then up to G, then all white keys, then the black keys. |
-| **COPY ME** | It plays a few notes and she plays them back. Each time she gets it right, it adds a note. | From 2 notes up to 12, on more keys. |
-| **HIGH LOW** | It plays two notes: was the second higher or lower? She answers with OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
-| **CHORDS** | The screen names a chord and she holds its three notes. If she is stuck, the keys light up. | C, F and G, then the minor chords, then any key. |
-| **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is her turn, with each key lit as its turn comes. If she isn't done by the end of the bar, the tune comes round again. | From three notes on the beats to seven on any eighth note. |
-| **TAP IT** | A drum plays a rhythm, shown as boxes on the screen; she taps it back on any key. | From three slow hits to six quick ones. |
+| **TUNES** | The next key of a tune lights green and waits, and the screen says its letter. With each right note a band plays along, at the child's own pace. | Nine traditional tunes, one after the other. |
+| **FIND IT** | The screen shows a letter; the child finds that key. A wrong key is named ("THAT WAS C"), and after two tries the right keys light up. | C D E, then up to G, then all white keys, then the black keys. |
+| **COPY ME** | It plays a few notes, to be played back. Each time that goes right, it adds a note. | From 2 notes up to 12, on more keys. |
+| **HIGH LOW** | It plays two notes: was the second higher or lower? The answer is OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
+| **CHORDS** | The screen names a chord; the child holds its three notes. After a while without them, the keys light up. | C, F and G, then the minor chords, then any key. |
+| **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is the child's turn, with each key lit as its turn comes. If the tune isn't finished by the end of the bar, it comes round again. | From three notes on the beats to seven on any eighth note. |
+| **TAP IT** | A drum plays a rhythm, shown as boxes on the screen, to be tapped back on any key. | From three slow hits to six quick ones. |
 
 ## Build it
 

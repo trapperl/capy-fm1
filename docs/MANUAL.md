@@ -52,31 +52,31 @@ Do the first install yourself, with the computer at hand, before the FM-1 is wra
 
 The tables in the [README](../README.md#playing) are complete. A few details:
 
-- **Letters and chords.** The screen names what she holds. It knows major, minor, diminished, augmented and sus
+- **Letters and chords.** The screen names the keys that are held. It knows major, minor, diminished, augmented and sus
   chords and the three common sevenths, in any order of the notes. **GLO** swaps the letters for the sound's wave
   and back; the choice is kept.
 - **The knobs and their buttons.** FX, ENV and LFO each switch one thing on and off; the knob above each
   (KNOB 1, 2, 3) sets how much, and the screen shows them in the same order: ECHO, LENGTH, WOBBLE, then TONE (KNOB 4). Turning a knob switches its thing on, so a knob never does nothing.
-- **The band** never starts by itself and plays quietly under her. It begins with its drums alone (LULLABY has
-  none: it waits). She leads it with the lowest octave of keys, F to E: each white key is a chord in C (C, D minor,
-  E minor, F, G, A minor; B plays G), kept until she picks another, and the band answers at once. Of several low
+- **The band** never starts by itself and plays quietly under the child's playing. It begins with its drums alone (LULLABY has
+  none: it waits). The lowest octave of keys leads it, F to E: each white key is a chord in C (C, D minor,
+  E minor, F, G, A minor; B plays G), kept until another is picked, and the band answers at once. Of several low
   keys held, the lowest leads, so a C chord played down there is C. The keys play their own notes as always. It
   stays in C, so the white keys fit; the glowing keys are the notes of the chord it is on. BLUES walks its bass;
   WALTZ is in three.
-- **The recording** holds about 750 notes in as many layers as she likes. Each note remembers its instrument.
+- **The recording** holds about 750 notes in any number of layers. Each note remembers its instrument.
   It is kept in time with SPEED: turn ALGORITHM and the recording, the band and the arp all go faster or slower
   together. With the band on, a new recording is trimmed to a whole number of beats.
 - **The arp is recorded too**: what goes into the recording is what sounded.
 - **Four songs.** SELECT turns through SONG 1 to SONG 4; the screen says which one REC, PLAY, SAVE and EDIT
-  mean. Turning to another song keeps the one she leaves (the sound stops for a moment while it is written), so
+  mean. Turning to another song keeps the one that was showing (the sound stops for a moment while it is written), so
   the knob never loses a recording. Switching off does: **SAVE** first.
 - **SAVE** stops the sound for a moment (the FM-1 has to be quiet while it writes), then says SONG 2 SAVED. At
-  power-on the song she was on is there again: PLAY.
+  power-on the song that was showing is there again: PLAY.
 - **EDIT** needs a full second's hold to erase everything; a tap only takes the last layer away.
 
 ## The games: the details
 
-- **The pond.** HOME and switching on show the capybaras' pond until she plays a key, presses a button or turns a knob; the
+- **The pond.** HOME and switching on show the capybaras' pond until a key is played, a button pressed or a knob turned; the
   buttons OCT- and OCT+ don't close it, they step back and forth through its six scenes (calm, the jump into the
   water, the ride on her mother's back, the wren, the nap, the yuzu bath), which also follow each other by
   themselves; each visit starts with the next one. The other babies blink, and the ones in the water bob. There is one
@@ -97,7 +97,7 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 
 Notes played on the keys go out over USB on channel 1. Notes coming in over USB or the TRS jack play the
 instrument that is showing, and are recorded like the keys. The FM-1 also shows up as a USB audio input, so a
-computer or phone can record her.
+computer or phone can record the playing.
 
 ## What it does not do
 
