@@ -103,46 +103,11 @@ metronome click on and off, and **HOME** leaves. The instruments, the knobs and 
 | **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is the child's turn, with each key lit as its turn comes. If the tune isn't finished by the end of the bar, it comes round again. | From three notes on the beats to seven on any eighth note. |
 | **TAP IT** | A drum plays a rhythm, shown as boxes on the screen, to be tapped back on any key. | From three slow hits to six quick ones. |
 
-## For developers
+## Changing Capy
 
-Capy is built on [Dinghy](https://github.com/zvenson/dinghy), which carries
-[Felucca](https://github.com/hugelton/Felucca)'s platform: the updater, the USB rescue, USB-MIDI and USB audio.
-The instrument itself is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in
-[docs/API.md](docs/API.md), the chip's rules in [docs/RULES.md](docs/RULES.md).
-
-### Run Capy on a computer, without an FM-1
-
-The simulator compiles the same code for your computer. It is not interactive: a script presses keys and buttons
-at set times, and the simulator writes what the FM-1 would have played and shown into files.
-
-It needs Linux (or Windows with WSL), a C compiler and Python 3. In a terminal:
-
-```sh
-git clone https://github.com/trapperl/capy-fm1.git
-cd capy-fm1
-pip3 install Pillow
-tests/run_host.sh tests/scripts/tour.txt
-```
-
-That runs a tour of Capy and leaves the result in `build/host/`: the sound as `capy.wav`, and the screen at the
-moments the script asks for as `capy-<milliseconds>.png`. A script is plain text, one event a line, such as
-`900 keys 0x80` (at 900 ms, hold middle C) or `1500 shot` (save the screen). The scripts are in
-[tests/scripts](tests/scripts); `tour.txt` begins with the numbers of the buttons and knobs.
-
-### Build the firmware
-
-This needs Linux on x86-64, Python 3, JieLi's toolchain and its AC79 SDK. In a terminal, in the `capy-fm1` folder:
-
-```sh
-pip3 install Pillow mido python-rtmidi
-tools/get_toolchain.sh
-git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
-    https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
-./build.sh
-```
-
-The package is then `build/capy.fwsc`. Install it as above, with `build/capy.fwsc` in place of `capy.fwsc`. The
-`capy.fwsc` in this repository is the package built from the code beside it.
+Capy is open source. The whole instrument is one C file, [firmware/src/capy.c](firmware/src/capy.c), built on
+[Dinghy](https://github.com/zvenson/dinghy) and [Felucca](https://github.com/hugelton/Felucca). How to build the
+firmware yourself is in [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
 ## Licence
 
