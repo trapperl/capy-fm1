@@ -6,6 +6,8 @@ Capy replaces the FM-1's firmware with a small keyboard instrument made for a yo
 
 - **Nine instruments with their real names:** piano, organ, bells, guitar, bass, strings, brass, flute and a drum
   kit. The screen names every note and chord played, so what a child learns here is true at any piano.
+- **Twelve animals on the keys:** a frog, a duck, a cow, an owl, a cat and more, each with its call, its picture
+  and its name.
 - **A band the child leads.** It starts with its drums alone. One low key picks the chord, and the bass and the
   chords follow.
 - **Seven games that don't run out.** They make their questions up, get a little harder after five right answers
@@ -18,6 +20,7 @@ Capy replaces the FM-1's firmware with a small keyboard instrument made for a yo
 <img src="docs/screen-chord.png" width="160" alt="Playing: C, E and G held; the screen says C MAJOR, the keys carry their letters, the knobs read ECHO LENGTH WOBBLE TONE">
 <img src="docs/screen-band.png" width="160" alt="The band: POP on the chord C; the keys that lead it are marked orange, the keys that fit blue">
 <img src="docs/screen-drums.png" width="160" alt="DRUMS: the key G is the HIGH TOM">
+<img src="docs/screen-animals.png" width="160" alt="ANIMALS: the key D is the DUCK">
 <img src="docs/screen-find.png" width="160" alt="FIND IT: find the note E">
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
@@ -27,7 +30,8 @@ Capy replaces the FM-1's firmware with a small keyboard instrument made for a yo
 
 A capybara and her baby sit beside the instrument's name. The capybara sings when notes sound, nods to the band,
 blinks, and gets a yuzu on her head for a chord or a right answer. A right answer also makes the lights under the
-keys glow once. HOME (and switching on) shows their pond, which stays until the child plays or picks something.
+keys glow once. HOME (and switching on) shows their pond, which stays until the child plays or picks something. The pond also
+comes back, with the capybara asleep, when nothing has been touched for two minutes.
 Little scenes play there one after the other (a baby jumps into the water, rides on her mother's back, a wren
 lands and sings, the mother dozes off, yuzus drop in for a bath), and OCT- and OCT+ step through them. For every
 three levels gained in the games, another baby moves into the pond, up to five.
@@ -68,7 +72,7 @@ M-VAVE's firmware, and what to set before handing the FM-1 to a child.
 | Control | What it does |
 | --- | --- |
 | Keys | Play notes, up to twelve at once. The screen names what is held: a note's letter, several letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
-| **PRESETS** | Picks the instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE or DRUMS. DRUMS puts a drum kit on the keys (C kick, D snare, E clap, F and G toms, A hat, B cymbal, the black keys sticks), and the screen names each drum as it is hit. |
+| **PRESETS** | Picks the instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE, DRUMS or ANIMALS. DRUMS puts a drum kit on the keys (C kick, D snare, E clap, F and G toms, A hat, B cymbal, the black keys sticks), and the screen names each drum as it is hit. ANIMALS puts an animal on every key (C frog, D duck, E bird, F cow, G owl, A cat, B capybara; on the black keys a cricket, a bee, a dog, a sheep and a chick), and the screen shows its picture and its name. |
 | **OCT-**, **OCT+** | An octave lower or higher. |
 | **KNOB 1**, **FX** | ECHO. The knob sets how much; FX switches it on and off. |
 | **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much; ENV switches it on and off. |

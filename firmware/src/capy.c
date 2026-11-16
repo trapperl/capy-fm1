@@ -8,7 +8,7 @@
  *   - Two places: playing, and the games (SEL). HOME always goes back.
  *
  *   keys        play (12 voices, two-operator FM). The screen names the note, the notes, or the chord she holds
- *   PRESETS     the instrument
+ *   PRESETS     the instrument; the last two are a drum kit and twelve animals, a call on every key
  *   OCT- OCT+   the octave
  *   KNOB 1      ECHO                                 FX  switches it on / off   (the knobs in the order of their
  *   KNOB 2      LENGTH: how long notes ring          ENV switches it on / off    buttons below them: FX, ENV, LFO;
@@ -27,6 +27,7 @@
  *   SEL         the games (SELECT: which one; SEL again: another question): TUNES, FIND IT, COPY ME, HIGH LOW,
  *               CHORDS, TAP IT
  *   HOME        back to the start: piano, everything off. Held 3 s (grown-ups): QUIET, half the loudness
+ *   (nothing touched for two minutes: the pond comes back, asleep, until something is touched)
  *
  * Built on Dinghy (zvenson) and its platform (Felucca by Leo Kuroshita, with SLOOP's changes): platform.c and below.
  * Integers only: no float, no 64-bit division (docs/RULES.md). tests/host.c runs this file on a computer. */
@@ -59,8 +60,9 @@ typedef struct {
     uint16_t gain;                              /* Q15 */
 } patch_t;
 
-#define NPATCH 9u
+#define NPATCH 10u
 #define PI_DRUMS 8u                             /* the drum kit: its keys are drums (drum_hit), never a voice */
+#define PI_ANIMALS 9u                           /* the animals: its keys are calls (animal_hit), never a voice */
 static const patch_t PATCH[NPATCH] = {
     /* name      colour               tr  ratio ipk   isus itau arate    dtau sus    rtau fb   fol vib gain */
     {"PIANO",   RGB(255, 255, 255),   0,  256,  980,  180, 5,  3043486, 10,  0,     4,   0,   0,  0,  9000},
@@ -72,6 +74,7 @@ static const patch_t PATCH[NPATCH] = {
     {"BRASS",   RGB(255, 215, 0),     0,  256,  1040, 0,   0,  101450,  6,   24000, 3,   200, 1,  0,  7000},
     {"FLUTE",   RGB(130, 255, 170),   12, 256,  200,  200, 0,  202899,  0,   32767, 3,   0,   0,  3,  9000},
     {"DRUMS",   RGB(255, 90, 60),     0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
+    {"ANIMALS", RGB(150, 230, 90),    0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
 };
 
 /* exp(-1 / (tau * 1378.125)) in Q20, tau = 0.03 0.05 0.08 0.12 0.2 0.3 0.5 0.8 1.2 2 3 4.5 7 10 15 22 s */
@@ -108,6 +111,123 @@ static int32_t sine(uint32_t ph)                /* a full cycle over 2^32 -> -32
     return y > 32767 ? 32767 : y < -32767 ? -32767 : y;
 }
 static uint32_t tau_at(int32_t i) { return TAUMUL[i < 0 ? 0 : i > 15 ? 15 : i]; }
+
+/* ---- the animals: twelve calls, one on each key of the octave. A call is one FM pair whose pitch, loudness and
+ * brightness follow a small drawing in time (animal_at, every SUB frames), so it needs no samples. Four can
+ * sound at once. */
+#define NA 4u
+#ifndef NAP_MS
+#define NAP_MS 120000u                          /* untouched this long, the pond comes back, asleep */
+#endif
+static struct {
+    volatile uint32_t trig;                     /* main -> ISR: counts the calls */
+    volatile uint8_t kind;                      /* main -> ISR: which animal, 0..11 (the key's pitch class) */
+    uint32_t seen, t, cph, mph;                 /* t: frames since it began */
+    int32_t a, fbs;
+    uint8_t on;
+} animal[NA];
+typedef struct { int32_t f, amp, idx, ratio_q8, fb, nz; } acall_t;   /* f: Hz; idx, fb: as a patch's; nz: noise */
+static int32_t lin(int32_t t, int32_t t0, int32_t t1, int32_t a, int32_t b)   /* a until t0, b from t1, a line between */
+{
+    if (t <= t0) return a;
+    if (t >= t1) return b;
+    return a + (b - a) * (t - t0) / (t1 - t0);
+}
+static int32_t syl(int32_t t, int32_t t0, int32_t t1, int32_t att, int32_t rel)   /* a syllable t0..t1: 0..256 */
+{
+    if (t < t0 || t >= t1) return 0;
+    if (t - t0 < att) return 256 * (t - t0) / att;
+    if (t1 - t < rel) return 256 * (t1 - t) / rel;
+    return 256;
+}
+static int animal_at(uint32_t kind, int32_t ms, acall_t *c)   /* the call at ms; 0: it is over */
+{
+    int32_t e = 0, k, f, w, peak = 0;
+    c->f = 440; c->amp = 0; c->idx = 0; c->ratio_q8 = 256; c->fb = 0; c->nz = 0;
+    switch (kind) {
+    case 0:                                     /* C, the frog: "rib-bit", a rattle */
+        if (ms >= 340) return 0;
+        e = syl(ms, 0, 110, 8, 20) + syl(ms, 150, 340, 8, 50);
+        if (ms % 18 >= 9) e = (e * 70) >> 8;
+        c->f = ms < 150 ? lin(ms, 0, 110, 420, 520) : lin(ms, 150, 340, 600, 760);
+        c->ratio_q8 = 128; c->idx = 650; peak = 14000;
+        break;
+    case 1:                                     /* C#, the cricket: three chirps of quick ticks */
+        if (ms >= 640) return 0;
+        e = syl(ms, 0, 130, 3, 10) + syl(ms, 250, 380, 3, 10) + syl(ms, 500, 630, 3, 10);
+        if (ms % 16 >= 8) e = 0;
+        c->f = 4300; peak = 6000;
+        break;
+    case 2:                                     /* D, the duck: "quack quack", through the nose */
+        if (ms >= 430) return 0;
+        e = syl(ms, 0, 170, 10, 40) + syl(ms, 230, 430, 10, 60);
+        k = ms < 230 ? ms : ms - 230;
+        f = k < 50 ? lin(k, 0, 50, 560, 400) : lin(k, 50, 200, 400, 330);
+        c->f = 3 * f; c->ratio_q8 = 85; c->idx = 700; c->fb = 150; peak = 11000;
+        break;
+    case 3:                                     /* D#, the bee: it comes by and goes */
+        if (ms >= 950) return 0;
+        e = syl(ms, 0, 950, 350, 450);
+        w = sine((uint32_t)ms * 6u * 4294967u);
+        c->f = 200 + lin(ms, 0, 950, 0, 40) + ((w * 12) >> 15);
+        c->idx = 1000; c->fb = 250; peak = 9000;
+        break;
+    case 4:                                     /* E, the bird: "tweet tweet twee-oo" */
+        if (ms >= 340) return 0;
+        e = syl(ms, 0, 70, 5, 20) + syl(ms, 110, 180, 5, 20) + syl(ms, 220, 340, 5, 40);
+        c->f = ms < 110 ? lin(ms, 0, 70, 2600, 4000) : ms < 220 ? lin(ms, 110, 180, 2800, 4200) : lin(ms, 220, 340, 4200, 3000);
+        c->idx = 80; peak = 8000;
+        break;
+    case 5:                                     /* F, the cow: "moo", up and slowly down */
+        if (ms >= 1150) return 0;
+        e = syl(ms, 0, 1150, 120, 250);
+        f = ms < 300 ? lin(ms, 0, 300, 105, 150) : lin(ms, 700, 1150, 150, 112);
+        c->f = 2 * f; c->ratio_q8 = 128; c->fb = 120; peak = 15000;
+        c->idx = ms < 350 ? lin(ms, 0, 350, 150, 900) : lin(ms, 350, 1150, 900, 450);
+        break;
+    case 6:                                     /* F#, the dog: "woof woof", rough */
+        if (ms >= 420) return 0;
+        e = syl(ms, 0, 140, 6, 50) + syl(ms, 260, 420, 6, 70);
+        k = ms < 260 ? ms : ms - 260;
+        c->f = 2 * lin(k, 0, 120, 420, 200); c->ratio_q8 = 128; c->idx = 1100; c->fb = 250; c->nz = 2500; peak = 14000;
+        break;
+    case 7:                                     /* G, the owl: "hoo, hoo-hoo", round */
+        if (ms >= 1020) return 0;
+        e = syl(ms, 0, 260, 40, 90) + syl(ms, 420, 560, 30, 60) + syl(ms, 640, 1020, 40, 160);
+        c->f = ms < 420 ? lin(ms, 0, 260, 430, 390) : ms < 640 ? lin(ms, 420, 560, 420, 400) : lin(ms, 640, 1020, 430, 370);
+        c->idx = 130; peak = 15000;
+        break;
+    case 8:                                     /* G#, the sheep: "baa", shaking */
+        if (ms >= 850) return 0;
+        w = sine((uint32_t)ms * 9u * 4294967u);
+        e = (syl(ms, 0, 850, 50, 200) * (200 + ((w * 56) >> 15))) >> 8;
+        f = lin(ms, 0, 850, 400, 350) + ((w * 20) >> 15);
+        c->f = 3 * f; c->ratio_q8 = 85; c->idx = 800; peak = 11000;
+        break;
+    case 9:                                     /* A, the cat: "meow", up, bright, and down */
+        if (ms >= 780) return 0;
+        e = syl(ms, 0, 780, 70, 200);
+        f = ms < 220 ? lin(ms, 0, 220, 520, 800) : ms < 450 ? lin(ms, 220, 450, 800, 860) : lin(ms, 450, 780, 860, 470);
+        c->f = 2 * f; c->ratio_q8 = 128; peak = 11000;
+        c->idx = ms < 320 ? lin(ms, 0, 320, 250, 850) : lin(ms, 320, 780, 850, 300);
+        break;
+    case 10:                                    /* A#, the chick: "peep peep peep" */
+        if (ms >= 410) return 0;
+        e = syl(ms, 0, 80, 5, 25) + syl(ms, 160, 240, 5, 25) + syl(ms, 320, 410, 5, 30);
+        k = ms % 160;
+        c->f = k < 40 ? lin(k, 0, 40, 2800, 3600) : lin(k, 40, 80, 3600, 3200);
+        c->idx = 50; peak = 6500;
+        break;
+    default:                                    /* B, the capybara: two squeaks, going up */
+        if (ms >= 400) return 0;
+        e = syl(ms, 0, 140, 10, 40) + syl(ms, 200, 400, 10, 70);
+        c->f = ms < 200 ? lin(ms, 0, 140, 900, 1900) : lin(ms, 200, 400, 1000, 2300);
+        c->idx = 260; peak = 9000;
+        break;
+    }
+    c->amp = (e * peak) >> 8;
+    return 1;
+}
 
 static void app_audio(int32_t *out, uint32_t n)
 {
@@ -174,6 +294,42 @@ static void app_audio(int32_t *out, uint32_t n)
             voice[v].cph = cph; voice[v].mph = mph; voice[v].fbs = fbs;
             if (!env) a = 0, voice[v].stage = 0;
             voice[v].a = a;
+        }
+        for (v = 0; v < NA; v++) {              /* the animals */
+            static uint32_t arnd = 7;
+            acall_t c;
+            uint32_t cph, mph, cinc, minc;
+            int32_t a, fbs;
+            if (animal[v].trig != animal[v].seen) {
+                animal[v].seen = animal[v].trig;
+                animal[v].t = 0; animal[v].cph = animal[v].mph = 0; animal[v].fbs = 0;
+                animal[v].on = 1;
+            }
+            if (!animal[v].on) continue;
+            if (!animal_at(animal[v].kind, (int32_t)((animal[v].t * 743u) >> 15), &c) && animal[v].a < 8) {
+                animal[v].on = 0;
+                animal[v].a = 0;
+                continue;
+            }
+            animal[v].t += cnt;
+            cinc = (uint32_t)c.f * 97392u;
+            minc = (uint32_t)(((uint64_t)cinc * (uint32_t)c.ratio_q8) >> 8);
+            cph = animal[v].cph; mph = animal[v].mph; a = animal[v].a; fbs = animal[v].fbs;
+            for (i = 0; i < cnt; i++) {
+                int32_t m, s;
+                a += (c.amp - a) >> 4;
+                mph += minc;
+                m = sine(mph + ((uint32_t)(fbs * c.fb) << 6));
+                fbs = (fbs + m) >> 1;
+                cph += cinc;
+                s = sine(cph + ((uint32_t)(m * c.idx) << 6));
+                if (c.nz) {
+                    arnd = arnd * 1664525u + 1013904223u;
+                    s += (((int32_t)arnd >> 17) * c.nz) >> 14;
+                }
+                mono[sb + i] += (s * a) >> 15;
+            }
+            animal[v].cph = cph; animal[v].mph = mph; animal[v].a = a; animal[v].fbs = fbs;
         }
     }
 
@@ -274,7 +430,7 @@ enum { S_LIVE, S_LOOP, S_BAND, S_CUE };         /* who plays a voice: the keys, 
 /* the drum kit: every octave the same seven drums on its white keys, the sticks on the black ones */
 static const char *const DRUM_NAME[12] = {"KICK", "STICKS", "SNARE", "STICKS", "CLAP", "LOW TOM", "STICKS", "HIGH TOM",
                                           "STICKS", "HAT", "STICKS", "CYMBAL"};
-static uint8_t drum_pc;                         /* the last one she hit, for the screen */
+static uint8_t drum_pc;                         /* the last drum or animal played, for the screen */
 static uint32_t drum_n, drum_ms;
 static void drum_hit(uint32_t note, uint32_t src)
 {
@@ -291,12 +447,24 @@ static void drum_hit(uint32_t note, uint32_t src)
     }
     if (src == 0u) { drum_pc = (uint8_t)pc; drum_n++; drum_ms = fm1_ms; }   /* (0: S_LIVE) */
 }
+static const char *const ANIMAL_NAME[12] = {"FROG", "CRICKET", "DUCK", "BEE", "BIRD", "COW", "DOG", "OWL", "SHEEP", "CAT",
+                                            "CHICK", "CAPYBARA"};
+static void animal_hit(uint32_t note, uint32_t src)   /* every octave the same twelve animals */
+{
+    static uint32_t next;
+    uint32_t pc = note % 12u;
+    animal[next].kind = (uint8_t)pc;
+    animal[next].trig++;
+    next = (next + 1u) % NA;
+    if (src == 0u) { drum_pc = (uint8_t)pc; drum_n++; drum_ms = fm1_ms; }   /* (0: S_LIVE) */
+}
 static void play(uint32_t note, uint32_t pi, uint32_t src, uint32_t vol)
 {
     uint32_t v, pick = 0, best = 0xFFFFFFFFu;
     int32_t n;
     if (note > 127u) return;
     if (pi == PI_DRUMS) { drum_hit(note, src); return; }
+    if (pi == PI_ANIMALS) { animal_hit(note, src); return; }
     for (v = 0; v < NV; v++) {                  /* the same note again, else a silent voice, else a released, else the oldest */
         uint32_t score;
         if (voice[v].note == note && voice[v].src == src && voice[v].pi == pi && voice[v].stage) score = 0;
@@ -1132,9 +1300,17 @@ static void draw_scope(uint16_t col)            /* what the sound looks like, he
     cv_blit(0, 44);
 }
 
+static void draw_animal(uint32_t pc, int32_t x, int32_t y);
 static void draw_panel(const char *big, const char *small, uint16_t col)   /* two lines: a big one and a small one */
 {
     cv_begin(240, 64, C_BLACK);
+    if (!place && cur_patch == PI_ANIMALS && big[0]) {   /* an animal: its picture, then its name */
+        int32_t x = (240 - 58 - text_w(&FONT_L, big)) / 2;
+        draw_animal(drum_pc, x, 2);
+        cv_text(x + 58, 6, &FONT_L, big, col);
+        cv_blit(0, 44);
+        return;
+    }
     cv_text((240 - text_w(&FONT_L, big)) / 2, 2, &FONT_L, big, col);
     cv_text((240 - text_w(&FONT_S, small)) / 2, 42, &FONT_S, small, C_TXT);
     if (place && game == G_TAP) {               /* the rhythm: eight boxes, the filled ones are hits */
@@ -1197,6 +1373,179 @@ static void draw_capy(int cv, int32_t x, int32_t y, int32_t s, uint32_t f, uint3
                 : f & CAPY_SING ? RGB(60, 20, 20) : RGB(104, 68, 40);          /* m: the mouth, open when she sings */
             capy_px(cv, x + cx * s, y + (int32_t)r * s - (f & CAPY_UP ? s : 0), s, col);
             if (ch == 'm' && f & CAPY_SING) capy_px(cv, x + cx * s, y + (int32_t)(r + 1u) * s - (f & CAPY_UP ? s : 0), s, col);
+        }
+}
+/* ---- the animals' pictures, 16 x 12, by the key's pitch class (the capybara is the one above). g G greens, w white,
+ * k black, y yellow, o orange, b B browns, c light blue, e grey, p pink, r red */
+static const char *const ANIMAL_PIC[11][12] = {
+    {   /* frog */
+        "..ggg......ggg..",
+        ".gwwwg....gwwwg.",
+        ".gwkwg....gwkwg.",
+        ".gggggggggggggg.",
+        "gggggggggggggggg",
+        "gggggggggggggggg",
+        "ggGggggggggggGgg",
+        "gggGGGGGGGGGGggg",
+        ".gggggggggggggg.",
+        "..gggggggggggg..",
+        ".ggg.gg..gg.ggg.",
+        "ggg..gg..gg..ggg",
+    },
+    {   /* cricket */
+        "................",
+        "..........G...G.",
+        "...........G.G..",
+        "...........ggg..",
+        "..gggggggggkgg..",
+        ".gggggggggggg...",
+        ".gGgGgGgGggg....",
+        "..gggggggg......",
+        "..G.g..g..G.....",
+        ".G..g..g...G....",
+        "G...g..g....G...",
+        "................",
+    },
+    {   /* duck */
+        "..........yyy...",
+        ".........yyyyy..",
+        ".........yykyyoo",
+        ".........yyyyooo",
+        "..........yyy...",
+        "y........yyy....",
+        "yy..yyyyyyyy....",
+        "yyyyyyyyyyyy....",
+        ".yyyyyyyyyyy....",
+        "..yyyyyyyyy.....",
+        ".....o..o.......",
+        "....oo.oo.......",
+    },
+    {   /* bee */
+        "......cc.cc.....",
+        ".....ccccccc....",
+        ".....ccccccc....",
+        "......ccccc.....",
+        "..ByByByByyyy...",
+        ".BByByByByyyyy..",
+        "BBByByByByykyy..",
+        ".BByByByByyyyy..",
+        "..ByByByByyyy...",
+        "................",
+        "................",
+        "................",
+    },
+    {   /* bird */
+        "................",
+        "........ccc.....",
+        ".......ccccc....",
+        ".......cckccoo..",
+        ".......ccccc....",
+        "c...cccccccc....",
+        "cc.cccccccc.....",
+        ".ccccwwwwcc.....",
+        "..cccwwwwc......",
+        "....ccccc.......",
+        ".....e.e........",
+        ".....e.e........",
+    },
+    {   /* cow */
+        ".e............e.",
+        ".ee.wwwwwwww.ee.",
+        "..wwwwwwwwwwww..",
+        "ppwwwwwwwwBBBwpp",
+        "..wwkwwwwkwBBw..",
+        "..wwkwwwwkwwww..",
+        "..wwwwwwwwwwww..",
+        "...pppppppppp...",
+        "..pppppppppppp..",
+        "..ppBppppppBpp..",
+        "..pppppppppppp..",
+        "...pppppppppp...",
+    },
+    {   /* dog: a West Highland terrier */
+        "...w........w...",
+        "..wpw......wpw..",
+        "..wpww.ww.wwpw..",
+        ".wwwwwwwwwwwwww.",
+        "w.wwwwwwwwwwww.w",
+        "wwwwkkwwwwkkwwww",
+        ".wwwwwwwwwwwwww.",
+        "wwwwwewkkwewwwww",
+        ".wwwewwkkwwewww.",
+        "w.wwewwrrwweww.w",
+        "..wwwewwwwewww..",
+        "...w.ww.ww.ww...",
+    },
+    {   /* owl */
+        ".b............b.",
+        ".bb..........bb.",
+        ".bbbbbbbbbbbbbb.",
+        ".bwwwwbbbbwwwwb.",
+        ".bwkkwbbbbwkkwb.",
+        ".bwkkwboobwkkwb.",
+        ".bwwwwboobwwwwb.",
+        ".bbbbbbbbbbbbbb.",
+        ".bBbBbBbBbBbBbb.",
+        ".bbBbBbBbBbBbbb.",
+        "..bbbbbbbbbbbb..",
+        "....oo....oo....",
+    },
+    {   /* sheep */
+        "...ww.wwww.ww...",
+        "..wwwwwwwwwwww..",
+        ".wwwwwwwwwwwwww.",
+        "eewwweeeeeewwwee",
+        ".eeweweeeewewee.",
+        "..wweeeeeeeeww..",
+        "..wweeeeeeeeww..",
+        "...weeeeeeeew...",
+        "....eeeppeee....",
+        "....eeeeeeee....",
+        "....eeeeeeee....",
+        ".....eeeeee.....",
+    },
+    {   /* cat */
+        "oo............oo",
+        "ooo..........ooo",
+        "oopo........opoo",
+        "oooooooooooooooo",
+        "oooooooooooooooo",
+        "oogkoooooooogkoo",
+        "oogkoooooooogkoo",
+        "oooooooppooooooo",
+        "oooooowppwoooooo",
+        ".oooowwwwwwoooo.",
+        "..oooowwwwoooo..",
+        "....oooooooo....",
+    },
+    {   /* chick */
+        "................",
+        ".....yyyyyy.....",
+        "....yyyyyyyy....",
+        "....ykyyyyky....",
+        "....yyyooyyy....",
+        "....yyyooyyy....",
+        "..yyyyyyyyyyyy..",
+        ".yyyyyyyyyyyyyy.",
+        ".yyyyyyyyyyyyyy.",
+        "..yyyyyyyyyyyy..",
+        "...yyyyyyyyyy...",
+        ".....oo..oo.....",
+    },
+};
+static void draw_animal(uint32_t pc, int32_t x, int32_t y)   /* into the canvas, 48 x 36 */
+{
+    uint32_t r, c;
+    if (pc >= 11u) { draw_capy(1, x, y - 2, 2, 0, 20); return; }
+    for (r = 0; r < 12u; r++)
+        for (c = 0; c < 16u; c++) {
+            char ch = ANIMAL_PIC[pc][r][c];
+            if (ch == '.') continue;
+            cv_rect(x + (int32_t)c * 3, y + (int32_t)r * 3, 3, 3,
+                    ch == 'g' ? RGB(90, 200, 70) : ch == 'G' ? RGB(30, 110, 40) : ch == 'w' ? C_WHITE : ch == 'k' ? RGB(20, 20, 20)
+                    : ch == 'y' ? RGB(255, 220, 60) : ch == 'o' ? RGB(255, 150, 30) : ch == 'b' ? RGB(176, 124, 72)
+                    : ch == 'B' ? RGB(104, 68, 40) : ch == 'c' ? RGB(120, 200, 255) : ch == 'e' ? RGB(130, 130, 130)
+                    : ch == 'p' ? RGB(255, 170, 190) : RGB(230, 60, 60));
         }
 }
 static void draw_top(const char *name, uint16_t col, uint32_t f)   /* the instrument or the game, and the capybara */
@@ -1423,12 +1772,14 @@ static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* th
 static const uint8_t POND_ENC[4] = {ENC_KNOB1, ENC_KNOB2, ENC_KNOB3, ENC_KNOB4};
 static int32_t pond_presets;                    /* PRESETS turned at the pond: it leaves, and the turn still counts */
 static uint32_t pond_b, pond_rel;               /* the button that closed it: the main loop still gets it (not OCT- / OCT+) */
+static int8_t pond_want = -1;                   /* the scene the next visit begins with (the nap) */
 static void pond_show(const char *title)        /* the pond, until a key, a knob or a button other than OCT- / OCT+ */
 {
     static uint8_t scene, been;                 /* each visit begins with the next scene */
     const uint32_t octs = 1u << BTN_OCT_DOWN | 1u << BTN_OCT_UP;
     uint32_t start = fm1_ms, t0 = fm1_ms, drawn = 0, n = babies(), was = fm1_in.buttons & octs, i, rel;
-    if (been) scene = (uint8_t)((scene + 1u) % NSCENE);
+    if (pond_want >= 0) scene = (uint8_t)pond_want, pond_want = -1;
+    else if (been) scene = (uint8_t)((scene + 1u) % NSCENE);
     been = 1;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
@@ -1522,8 +1873,8 @@ static uint32_t held_text(char *big, char *small)   /* returns a number that cha
             note[j] = voice[v].note;
             n++;
         }
-    if (cur_patch == PI_DRUMS && drum_n && fm1_ms - drum_ms < 500u) {   /* the drum she hit, by name */
-        sput(big, DRUM_NAME[drum_pc]);
+    if (cur_patch >= PI_DRUMS && drum_n && fm1_ms - drum_ms < (cur_patch == PI_DRUMS ? 500u : 1200u)) {   /* the drum or the animal, by name */
+        sput(big, cur_patch == PI_DRUMS ? DRUM_NAME[drum_pc] : ANIMAL_NAME[drum_pc]);
         small[0] = 0;
         return 0x40000000u | (drum_n << 1) | 1u;
     }
@@ -1580,7 +1931,7 @@ static void app_main(void)
 {
     uint32_t prev = 0, k, hash, keys_drawn = ~0u, name_drawn = ~0u, knobs_drawn = ~0u, status_drawn = ~0u;
     uint32_t panel_drawn = ~0u, scope_t = 0, scope_idle = 0, home_t = 0, edit_t = 0, home_done = 0, edit_done = 0;
-    uint32_t was_held = 0;
+    uint32_t was_held = 0, idle_t, idle_sig = 0;
     uint8_t held_note[27] = {0}, held_pi[27] = {0}, held[27] = {0};
     char line[40], big[40] = "", small[40] = "";
 
@@ -1597,7 +1948,7 @@ static void app_main(void)
     tick_ms = fm1_ms;
 
     pond_show("HELLO!");          /* hello: the pond, until she picks something */
-    tick_ms = fm1_ms;
+    tick_ms = idle_t = fm1_ms;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     for (;;) {
         uint32_t keys, down, up, rel, b, lit = 0, goal = 0, glow = 0, top = 0;
@@ -1758,12 +2109,29 @@ static void app_main(void)
             tick_ms = fm1_ms;
         }
 
+        /* ---- the nap: nothing touched and nothing sounding for NAP_MS, and the capybaras go to sleep at the
+         * pond. Everything stays as it is: the instrument, the knobs, the song. */
+        hash = cur_patch | bpm << 4 | (uint32_t)g_tone << 12 | (uint32_t)g_len << 17 | (uint32_t)g_wob << 22 | (uint32_t)g_echo << 27;
+        hash ^= (uint32_t)set.slot * 40503u ^ (uint32_t)(oct + 2) * 7919u;
+        if (keys || b || rel || fm1_in.buttons || hash != idle_sig || place || band || playing || rec != R_IDLE || !quiet())
+            idle_t = fm1_ms;
+        idle_sig = hash;
+        if (fm1_ms - idle_t > NAP_MS) {
+            pond_want = SC_NAP;
+            pond_show("ZZZ");
+            lcd_fill(0, 0, 240, 240, C_BLACK);
+            name_drawn = panel_drawn = keys_drawn = knobs_drawn = status_drawn = ~0u;
+            was_held = 0;
+            prev = 0;
+            tick_ms = idle_t = fm1_ms;
+        }
+
         /* ---- the knobs */
         e = fm1_enc_take(ENC_PRESETS) + pond_presets;
         pond_presets = 0;
         if (e != 0) {
             cur_patch = (uint8_t)(((int32_t)cur_patch + e % (int32_t)NPATCH + (int32_t)NPATCH) % (int32_t)NPATCH);
-            if (place && cur_patch == PI_DRUMS) cur_patch = e > 0 ? 0 : PI_DRUMS - 1u;   /* (the games ask for notes: no drums there) */
+            if (place && cur_patch >= PI_DRUMS) cur_patch = e > 0 ? 0 : PI_DRUMS - 1u;   /* (the games ask for notes: no drums or animals there) */
             if (place) say(PATCH[cur_patch].name);
             knobs_drawn = keys_drawn = panel_drawn = ~0u;
         }
@@ -1810,7 +2178,7 @@ static void app_main(void)
                 if (voice[k].gate && voice[k].note >= base && voice[k].note < base + 27
                     && (voice[k].src == S_LIVE || voice[k].src == S_LOOP || (voice[k].src == S_CUE && !cue_hide && voice[k].note == cue_on)))
                     lit |= 1u << (voice[k].note - base);
-            if (cur_patch == PI_DRUMS && !arp_on && !place) lit |= keys;   /* (drums are no voices: the keys she holds) */
+            if (cur_patch >= PI_DRUMS && !arp_on && !place) lit |= keys;   /* (drums and animals are no voices: the keys held) */
         }
         if (place) {
             goal = hint_mask;

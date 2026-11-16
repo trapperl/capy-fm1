@@ -100,6 +100,9 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 
 ## The games: the details
 
+- **The nap.** When nothing has been touched and nothing has sounded for two minutes, the pond comes back with the
+  capybara asleep (ZZZ). Any key, button or knob wakes it, and the instrument, the knobs and the song are as they
+  were. It does not happen in the games, with the click or a band on, or while a recording plays.
 - **The pond.** HOME and switching on show the capybaras' pond until a key is played, a button pressed or a knob turned; the
   buttons OCT- and OCT+ don't close it, they step back and forth through its six scenes (calm, the jump into the
   water, the ride on her mother's back, the wren, the nap, the yuzu bath), which also follow each other by
@@ -112,7 +115,7 @@ The tables in the [README](../README.md#playing) are complete. A few details:
   the notes light as they are played again (HIGH LOW), or the tune gets a note shorter (COPY ME).
 - The questions are made up as it goes, so there is no last one.
 - In the games SEQ switches the click on and off (TAP IT's rhythm is heard without it, and JOIN IN keeps its own
-  drums), and DRUMS is left out of the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
+  drums), and DRUMS and ANIMALS are left out of the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
   the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
 - The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
   Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.

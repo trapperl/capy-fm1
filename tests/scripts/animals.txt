@@ -1,0 +1,31 @@
+# The animals: PRESETS one back from the piano, then every key of an octave, C to B.
+100 keys 0x80
+150 keys 0
+300 enc 6 -1
+1000 keys 0x80
+1400 keys 0
+2500 keys 0x100
+2900 keys 0
+4000 keys 0x200
+4300 shot
+4400 keys 0
+5500 keys 0x400
+5900 keys 0
+7000 keys 0x800
+7400 keys 0
+8500 keys 0x1000
+8900 keys 0
+10000 keys 0x2000
+10400 keys 0
+11500 keys 0x4000
+11900 keys 0
+13000 keys 0x8000
+13400 keys 0
+14500 keys 0x10000
+14900 keys 0
+16000 keys 0x20000
+16400 keys 0
+17500 keys 0x40000
+17800 shot
+17900 keys 0
+19000 end
