@@ -2,23 +2,16 @@
 
 **A first real instrument for a child of five to seven, on the M-VAVE FM-1.**
 
-Capy replaces the FM-1's firmware with a small keyboard instrument. What it holds to:
+Capy replaces the FM-1's firmware with a small keyboard instrument made for a young child:
 
-1. **She is the musician.** Nothing plays unless she plays it or switched it on: her own recording, and a band she
-   starts and plays over. No demo songs.
-2. **Real instruments and real names.** Piano, organ, bells, guitar, bass, strings, brass, flute; notes by their
-   letters, chords by their names. What she learns here is true at any piano.
-3. **Every button does what is printed on it.** There are two places, playing and the games, and HOME always goes
-   back.
-4. **The games don't run out.** They make their questions up, get a little harder after five right answers and
-   remember their level. A wrong answer takes nothing away.
-
-A capybara and her baby sit beside the instrument's name. She sings when notes sound, nods to the band, blinks,
-and gets a yuzu on her head for a chord or a right answer (a right answer also makes every key's light breathe once, without
-a sound over hers). HOME (and switching on) shows their pond, which stays until she plays or picks something. Little scenes play
-there one after the other (a baby jumps into the water, rides on her mother's back, a wren lands and sings, the
-mother dozes off, yuzus drop in for a bath), and OCT- and OCT+ step through them. In the pond: every three
-levels gained in the games, another baby moves in, up to five.
+- **Nine instruments with their real names:** piano, organ, bells, guitar, bass, strings, brass, flute and a drum
+  kit. The screen names every note and chord she plays, so what she learns here is true at any piano.
+- **A band she leads.** It starts with its drums alone. One low key picks the chord, and the bass and the chords
+  follow her.
+- **Seven games that don't run out.** They make their questions up, get a little harder after five right answers
+  and remember their level. A wrong answer takes nothing away.
+- **Four songs of her own,** recorded in layers with any instrument.
+- **A pond of capybaras** as the home screen.
 
 <p>
 <img src="docs/screen-hello.png" width="160" alt="The pond: a wren sings on the capybara's back, two babies on the grass, three in the water">
@@ -32,65 +25,84 @@ levels gained in the games, another baby moves in, up to five.
 <img src="docs/pond.gif" width="160" alt="The pond and its scenes">
 </p>
 
-> **Status: runs on an FM-1.** Each change is checked in the host simulator (`tests/run_host.sh`), which runs the
-> same code and writes the screen and the sound to files, and then tried on one FM-1. The device package is built
-> by GitHub Actions, where the build's own safety checks pass. Install it with a computer nearby and read
-> [If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first. Installing firmware is at your own risk. (Capy was
-> first called Wren; a wren still visits the pond.)
+A capybara and her baby sit beside the instrument's name. The capybara sings when notes sound, nods to the band,
+blinks, and gets a yuzu on her head for a chord or a right answer. A right answer also makes the lights under the
+keys glow once. HOME (and switching on) shows their pond, which stays until the child plays or picks something.
+Little scenes play there one after the other (a baby jumps into the water, rides on her mother's back, a wren
+lands and sings, the mother dozes off, yuzus drop in for a bath), and OCT- and OCT+ step through them. For every
+three levels gained in the games, another baby moves into the pond, up to five.
+
+## Install
+
+Capy runs on an FM-1, but installing firmware is at your own risk. Do it with a computer nearby, and read
+[If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first.
+
+1. Get `capy.fwsc`: from the [releases](https://github.com/trapperl/capy-fm1/releases) if there is one, otherwise
+   from the newest run under [Actions](https://github.com/trapperl/capy-fm1/actions) (the `capy-fwsc` artifact;
+   GitHub asks you to sign in for that), or [build it](#build-it).
+2. Connect the FM-1 with a USB **data** cable and switch it on.
+3. Install it: `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before
+   it writes. A browser installer that takes a `.fwsc` file works too.
+4. Don't unplug it while it writes. The FM-1 restarts into Capy.
+
+To go back, install M-VAVE's own V15 package the same way. The [manual](docs/MANUAL.md) has the details, what to
+check before you hand it over, and a first five minutes with it.
 
 ## Playing
 
 | Control | What it does |
 | --- | --- |
-| Keys | Play. Twelve notes at once. The screen names what she holds: one note's letter, several notes' letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
-| **PRESETS** | The instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE, and DRUMS: a drum kit on the keys (C kick, D snare, E clap, F and G toms, A hat, B cymbal, the black keys sticks), each named on the screen as she hits it. |
-| **OCT-**, **OCT+** | Lower, higher. |
-| **KNOB 1**, **FX** | ECHO. The knob sets how much, FX switches it on and off. |
-| **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much, ENV switches it on and off. |
-| **KNOB 3**, **LFO** | WOBBLE: vibrato. The knob sets how much, LFO switches it on and off. |
+| Keys | Play notes, up to twelve at once. The screen names what is held: a note's letter, several letters, or the chord ("C MAJOR", "A MINOR", "G7"). |
+| **PRESETS** | Picks the instrument: PIANO, ORGAN, BELLS, GUITAR, BASS, STRINGS, BRASS, FLUTE or DRUMS. DRUMS puts a drum kit on the keys (C kick, D snare, E clap, F and G toms, A hat, B cymbal, the black keys sticks), and the screen names each drum as it is hit. |
+| **OCT-**, **OCT+** | An octave lower or higher. |
+| **KNOB 1**, **FX** | ECHO. The knob sets how much; FX switches it on and off. |
+| **KNOB 2**, **ENV** | LENGTH: how long notes ring. The knob sets how much; ENV switches it on and off. |
+| **KNOB 3**, **LFO** | WOBBLE: vibrato. The knob sets how much; LFO switches it on and off. |
 | **KNOB 4** | TONE: dark to bright. |
-| **GLO** | The note letters (on the screen's keys, and what she holds), or the sound's wave instead. |
-| **ARP** | Held keys play one after the other. |
-| **SEQ** | Each press the next one: CLICK (a metronome, four in a bar), then the bands POP, BLUES, WALTZ, LULLABY, then off. A band plays first only its drums. A low key (F to E, marked orange on the screen) leads it: the bass and the chords play that key's chord until she picks another. The screen says the chord; the keys that fit glow, the others still play. |
-| **ALGORITHM** | SPEED of the band, the arp and the recording (60 to 180). |
-| **SELECT** | Which of her four songs: SONG 1 to SONG 4. REC, PLAY, SAVE and EDIT mean the one that shows; the song she turns away from is kept. |
-| **REC** | Record what you play. REC again and it goes round. REC while it plays adds a layer, with any instrument. |
-| **PLAY** | The recording on and off. |
-| **EDIT** | Tap: take the last layer away. Hold a second: erase the recording. |
-| **SAVE** | Keep the song that shows for next time. |
-| **SEL** | The games. |
-| **HOME** | Back to the start: piano, everything off, and the pond, where OCT- and OCT+ step through its scenes. The recording is kept. |
+| **GLO** | Switches between the note letters (on the screen's keyboard, and for the keys held) and a picture of the sound's wave. |
+| **ARP** | Plays the held keys one after the other, in time. |
+| **SEQ** | Each press moves on: CLICK (a metronome), then four bands (POP, BLUES, WALTZ, LULLABY), then off. A band starts with its drums alone. One of the seven lowest white keys (marked orange on the screen) picks a chord, and the bass and the chords play it until another is picked. The screen names the chord, and the keys that fit it glow. |
+| **ALGORITHM** | The speed of the click, the band, the arp and the recording (60 to 180 beats a minute). |
+| **SELECT** | Picks one of four songs, SONG 1 to SONG 4. REC, PLAY, SAVE and EDIT work on the one that shows. A song that changed is saved when you turn away from it. |
+| **REC** | Records what is played. Press it again and the recording loops. REC while it plays adds a layer, with any instrument. |
+| **PLAY** | Starts and stops the recording. |
+| **EDIT** | Tap: remove the last layer. Hold for a second: erase the recording. |
+| **SAVE** | Keeps the song that shows, so it is still there after switching off. |
+| **SEL** | Opens the games. |
+| **HOME** | Back to the start: piano, everything switched off, and the pond. The recording is kept. |
 | **MASTER** | Volume. |
-| **HOME held 3 s** | For grown-ups: QUIET, half the loudness, kept over power-off. |
+| **HOME held 3 s** | For grown-ups: QUIET halves the loudness, and stays on after switching off. |
 
 ## The games
 
-**SEL** goes in, **SELECT** picks the game, **SEL** again asks for another question, **SEQ** switches the click (a
-metronome) on and off, **HOME** leaves. The
-instrument, the knobs and the keys work as always.
+**SEL** opens the games, **SELECT** picks one, **SEL** again asks for another question, **SEQ** switches a
+metronome click on and off, and **HOME** leaves. The instruments, the knobs and the keys work as always.
 
 | Game | What she does | How it grows |
 | --- | --- | --- |
-| **TUNES** | The next key of a tune is green and waits for her; the screen says its letter. She plays every note, and a band plays with her, at her pace: a bass and a chord where the tune's chord comes, a tick of the hat in between. | Nine traditional tunes, one after the other. |
-| **FIND IT** | The screen shows a letter: find that key. A wrong key is named ("THAT WAS C"); after two, the right keys light. | C D E, then up to G, all white keys, the black keys. |
-| **COPY ME** | It plays a few notes, she plays them back. Each time right, one note more. | From 2 notes up to 12, on more keys. |
-| **HIGH LOW** | Two notes: was the second higher or lower? OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
-| **CHORDS** | The screen names a chord: hold its three notes. Stuck, and the keys light. | C F G, then the minor ones, then any key. |
-| **JOIN IN** | Drums play. For one bar it plays a short tune over them and the keys light; the next bar is hers: the same notes, each key lit as its turn comes. Not done by the bar's end, it comes round again. | From three notes on the beats to seven on any eighth. |
-| **TAP IT** | A drum plays a rhythm, shown as boxes: tap it back on any key. | Three slow hits up to six quick ones. |
-
-More in the [manual](docs/MANUAL.md).
+| **TUNES** | The next key of a tune lights green and waits for her, and the screen says its letter. As she plays each note a band plays along at her pace. | Nine traditional tunes, one after the other. |
+| **FIND IT** | The screen shows a letter; she finds that key. A wrong key is named ("THAT WAS C"), and after two tries the right keys light up. | C D E, then up to G, then all white keys, then the black keys. |
+| **COPY ME** | It plays a few notes and she plays them back. Each time she gets it right, it adds a note. | From 2 notes up to 12, on more keys. |
+| **HIGH LOW** | It plays two notes: was the second higher or lower? She answers with OCT+ or OCT-. | From an octave apart down to neighbouring keys. |
+| **CHORDS** | The screen names a chord and she holds its three notes. If she is stuck, the keys light up. | C, F and G, then the minor chords, then any key. |
+| **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is her turn, with each key lit as its turn comes. If she isn't done by the end of the bar, the tune comes round again. | From three notes on the beats to seven on any eighth note. |
+| **TAP IT** | A drum plays a rhythm, shown as boxes on the screen; she taps it back on any key. | From three slow hits to six quick ones. |
 
 ## Build it
 
 Capy is built on [Dinghy](https://github.com/zvenson/dinghy), which carries
-[Felucca](https://github.com/hugelton/Felucca)'s platform: the updater, the USB rescue, USB-MIDI, USB audio.
+[Felucca](https://github.com/hugelton/Felucca)'s platform: the updater, the USB rescue, USB-MIDI and USB audio.
+The instrument itself is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in
+[docs/API.md](docs/API.md), the chip's rules in [docs/RULES.md](docs/RULES.md).
+
+**Try it without an FM-1.** The simulator runs the same code on a computer and writes the screen and the sound to
+files. It needs a C compiler and Python 3 with Pillow:
 
 ```sh
-tests/run_host.sh tests/scripts/tour.txt    # no FM-1 needed: build/host/capy.wav and the screens as PNG
+tests/run_host.sh tests/scripts/tour.txt    # -> build/host/capy.wav and the screens as PNG
 ```
 
-For the FM-1 itself you need Linux on x86-64, Python 3 with Pillow, JieLi's toolchain and its AC79 SDK:
+**Build it for the FM-1.** You need Linux on x86-64, Python 3 with Pillow, JieLi's toolchain and its AC79 SDK:
 
 ```sh
 pip3 install Pillow mido python-rtmidi
@@ -101,11 +113,8 @@ git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
 python3 tools/fm1_install.py build/capy.fwsc      # over USB; asks before it writes
 ```
 
-Or let GitHub build it: every push to `main` runs `.github/workflows/release.yml` and keeps `capy.fwsc` as a build
-artifact; a tag `v0.1` publishes a release.
-
-The instrument is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in
-[docs/API.md](docs/API.md), the chip's rules in [docs/RULES.md](docs/RULES.md).
+**Or let GitHub build it.** Every push to `main` runs `.github/workflows/release.yml` and keeps `capy.fwsc` as a
+build artifact; a tag such as `v0.3` publishes a release.
 
 ## Licence
 

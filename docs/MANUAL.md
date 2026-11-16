@@ -101,5 +101,5 @@ computer or phone can record her.
 
 ## What it does not do
 
-No demo, no characters, no colours or shapes standing in for notes, no hidden pages. One hold exists for grown-ups
+No demo songs, no colours or shapes standing in for notes, no hidden pages. One hold exists for grown-ups
 (QUIET). That is on purpose.

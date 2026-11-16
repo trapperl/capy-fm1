@@ -2,12 +2,10 @@
 /* Capy: a first real instrument for a child of five to seven, on the M-VAVE FM-1.
  *
  * What it holds to:
- *   1. She is the musician. Nothing plays unless she plays it or switched it on: her own recording (REC / PLAY)
- *      and a band she starts and plays over (SEQ). No demo.
- *   2. Real instruments and real names: piano, organ, bells, guitar, bass, strings, brass, flute; the notes by their
- *      letters, the chords by their names. What she learns here is true at any piano.
- *   3. Every button does what is printed on it. Two places: playing, and the games (SEL). HOME always goes back.
- *   4. The games make their questions up, so they do not run out; a wrong answer takes nothing away.
+ *   - Real instruments and real names: piano, organ, bells, guitar, bass, strings, brass, flute, drums; the notes by
+ *     their letters, the chords by their names. What she learns here is true at any piano.
+ *   - The games make their questions up, so they do not run out; a wrong answer takes nothing away.
+ *   - Two places: playing, and the games (SEL). HOME always goes back.
  *
  *   keys        play (12 voices, two-operator FM). The screen names the note, the notes, or the chord she holds
  *   PRESETS     the instrument
@@ -1629,7 +1627,7 @@ static void app_main(void)
         if (place) game_run(keys);
         click_mute = place && game == G_TAP;
 
-        /* ---- the buttons: each does what is printed on it */
+        /* ---- the buttons */
         b = fm1_input_edges(&rel) | pond_b;     /* (and the button that closed the pond) */
         rel |= pond_rel;
         pond_b = pond_rel = 0;
