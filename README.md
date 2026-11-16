@@ -10,7 +10,7 @@ Capy replaces the FM-1's firmware with a small keyboard instrument made for a yo
   and its name.
 - **A band the child leads.** It starts with its drums alone. One low key picks the chord, and the bass and the
   chords follow.
-- **Seven games that don't run out.** They make their questions up, get a little harder after five right answers
+- **Nine games that don't run out.** They make their questions up, get a little harder after five right answers
   and remember their level. A wrong answer takes nothing away.
 - **Four songs to record,** in layers, with any instrument.
 - **A pond of capybaras** as the home screen.
@@ -25,6 +25,8 @@ Capy replaces the FM-1's firmware with a small keyboard instrument made for a yo
 <img src="docs/screen-chords.png" width="160" alt="CHORDS: hold the three notes of G MAJOR">
 <img src="docs/screen-tap.png" width="160" alt="TAP IT: a rhythm as eight boxes">
 <img src="docs/screen-join.png" width="160" alt="JOIN IN: your turn, the next key is green">
+<img src="docs/screen-guess.png" width="160" alt="GUESS IT: which key was it, C or G?">
+<img src="docs/screen-drumit.png" width="160" alt="DRUM IT: a beat of two kicks and a snare">
 <img src="docs/pond.gif" width="160" alt="The pond and its scenes">
 </p>
 
@@ -106,6 +108,8 @@ metronome click on and off, and **HOME** leaves. The instruments, the knobs and 
 | **CHORDS** | The screen names a chord; the child holds its three notes. After a while without them, the keys light up. | C, F and G, then the minor chords, then any key. |
 | **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is the child's turn, with each key lit as its turn comes. If the tune isn't finished by the end of the bar, it comes round again. | From three notes on the beats to seven on any eighth note. |
 | **TAP IT** | A drum plays a rhythm, shown as boxes on the screen, to be tapped back on any key. | From three slow hits to six quick ones. |
+| **GUESS IT** | It plays one note without lighting its key. The keys it could be are green; the child plays the one it was. After two wrong keys only the right one stays lit. | Two keys to choose from (C and G), then three, five, seven, and the eight from C to C. |
+| **DRUM IT** | The keys become the drum kit. It plays a beat on the kick (C) and the snare (D), shown as boxes on the screen, to be played back on those keys. After two tries each drum's key lights as its turn comes. | From three slow hits on two drums to six quick ones on three, with the clap (E). |
 
 ## Changing Capy
 

@@ -112,10 +112,13 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 - Every game starts at level 1 and moves up after five right answers; the level is kept over power-off. Nothing
   moves a level down.
 - A wrong answer brings the same question again. Twice wrong and it helps: the right keys light (FIND IT, CHORDS),
-  the notes light as they are played again (HIGH LOW), or the tune gets a note shorter (COPY ME).
+  the notes light as they are played again (HIGH LOW), the tune gets a note shorter (COPY ME), only the right key
+  stays lit (GUESS IT), or each drum's key lights as its turn comes (DRUM IT).
 - The questions are made up as it goes, so there is no last one.
-- In the games SEQ switches the click on and off (TAP IT's rhythm is heard without it, and JOIN IN keeps its own
-  drums), and DRUMS and ANIMALS are left out of the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
+- In the games SEQ switches the click on and off (the rhythms of TAP IT and DRUM IT are heard without it, and JOIN IN keeps its
+  own drums), and DRUMS and ANIMALS are left out of the instruments. In DRUM IT the keys are the drum kit whatever
+  the instrument: C the kick, D the snare, E the clap, in every octave; the order of the drums counts, and roughly
+  their timing. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
   the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
 - The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
   Jingle Bells, London Bridge, Happy Birthday, Hot Cross Buns, Rain Rain Go Away, Au Clair de la Lune, Lightly Row,

@@ -1,0 +1,31 @@
+# GUESS IT and DRUM IT: SEL goes in, SELECT back from TUNES finds them (DRUM IT is the last, GUESS IT before it).
+100 keys 0x80
+150 keys 0
+300 btn 3
+600 enc 0 -1
+1500 shot
+3600 shot
+# two hits on the kick, one on the snare
+3700 keys 0x80
+3800 keys 0
+4300 keys 0x80
+4400 keys 0
+5500 keys 0x200
+5600 keys 0
+5800 shot
+9000 enc 0 -1
+9400 shot
+11000 shot
+# a wrong key twice, then C and G
+11100 keys 0x2
+11200 keys 0
+13500 keys 0x2
+13600 keys 0
+15500 shot
+15600 keys 0x80
+15700 keys 0
+15800 shot
+17500 keys 0x4000
+17600 keys 0
+17800 shot
+19000 end

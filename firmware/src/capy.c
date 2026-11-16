@@ -25,7 +25,7 @@
  *   EDIT        tap: take the last layer away. Held a second: erase the recording
  *   SAVE        keep the recording for next time
  *   SEL         the games (SELECT: which one; SEL again: another question): TUNES, FIND IT, COPY ME, HIGH LOW,
- *               CHORDS, TAP IT, JOIN IN. A finished tune is played back, with the band
+ *               CHORDS, TAP IT, JOIN IN, GUESS IT, DRUM IT. A finished tune is played back, with the band
  *   HOME        back to the start: piano, everything off. Held 3 s (grown-ups): QUIET, half the loudness
  *   (nothing touched for two minutes: the pond comes back, asleep, until something is touched)
  *
@@ -821,20 +821,22 @@ static void arp_run(void)
 }
 
 /* ================================================================ the games */
-/* Seven games that never run out: each makes its questions up as it goes, gets a little harder after five right
+/* Nine games that never run out: each makes its questions up as it goes, gets a little harder after five right
  * answers and remembers its level. A wrong answer costs nothing: the question comes again, then with a hint. */
-enum { G_TUNES, G_FIND, G_COPY, G_HILO, G_CHORD, G_TAP, G_ALONG, NGAME };
-static const char *const GNAME[NGAME] = {"TUNES", "FIND IT", "COPY ME", "HIGH LOW", "CHORDS", "TAP IT", "JOIN IN"};   /* (JOIN IN: "play along", in letters that fit beside the capybara) */
-static const uint8_t GMAX[NGAME] = {1, 5, 12, 5, 4, 4, 5};
+enum { G_TUNES, G_FIND, G_COPY, G_HILO, G_CHORD, G_TAP, G_ALONG, G_EAR, G_DRUM, NGAME };
+static const char *const GNAME[NGAME] = {"TUNES", "FIND IT", "COPY ME", "HIGH LOW", "CHORDS", "TAP IT", "JOIN IN", "GUESS IT", "DRUM IT"};   /* (JOIN IN: "play along", in letters that fit beside the capybara) */
+static const uint8_t GMAX[NGAME] = {1, 5, 12, 5, 4, 4, 5, 5, 5};
 enum { P_NEW, P_CUE, P_WAIT, P_DONE };
 #define NSAVE 4u                                /* her songs: SELECT picks one, slot 0..3 */
-static struct { uint8_t quiet, letters, song, lvl[NGAME], slot; } set;   /* what survives a power-off (new things go at the end:
+static struct { uint8_t quiet, letters, song, lvl[7], slot, lvx[NGAME - 7]; } set;   /* what survives a power-off (new things go at the end:
                                                                           an older, shorter one still loads, see app_main) */
+#define LVL(g) (*((g) < 7u ? &set.lvl[g] : &set.lvx[(g) - 7u]))   /* a game's level: the first seven games, then the later ones */
 static uint32_t set_dirty;
 static uint8_t game, g_phase, g_ok, g_miss, cue_hide;
 static uint32_t g_t, rnd_m = 12345u, hint_mask, q_pc = 99, q_n, q_pos, q_hi, q_mask, q_t0, chord_seen;
 static uint8_t q_note[16];
 static uint32_t tap_t[8];
+static uint8_t tap_pc[8];                        /* DRUM IT: the drum of each of her hits */
 static uint32_t al_t0, al_i;                    /* PLAY ALONG: the tick its tune starts on (a bar line), the next note to play */
 static uint8_t al_slot[8];                      /* ... and the eighth of the bar each note falls on */
 
@@ -844,9 +846,10 @@ static uint32_t rnd_n(uint32_t n)
     return (rnd_m >> 16) % n;
 }
 
-/* a cue: the notes a game plays to her (key numbers, 0 = F3; 255 = a drum) */
+/* a cue: the notes a game plays to her (key numbers, 0 = F3; 240 + n = the drum of the kit's key n, C = 0) */
+#define CUE_DRUM 240u
 static struct { uint16_t t; uint8_t key, dur; } cue[16];
-static uint32_t cue_n, cue_i, cue_t0, cue_off, cue_on = 255, cue_pi;
+static uint32_t cue_n, cue_i, cue_t0, cue_off, cue_on = 255, cue_pi, cue_drum, cue_drum_t;   /* cue_drum: its last drum, and when */
 static void cue_add(uint32_t t, uint32_t key, uint32_t dur_ms)
 {
     if (cue_n < 16u) { cue[cue_n].t = (uint16_t)t; cue[cue_n].key = (uint8_t)key; cue[cue_n].dur = (uint8_t)(dur_ms / 10u); cue_n++; }
@@ -857,7 +860,7 @@ static void cue_run(void)
     if (cue_on != 255u && (int32_t)(fm1_ms - cue_off) >= 0) { stop(cue_on, cue_pi, S_CUE); cue_on = 255; }
     if (g_phase != P_CUE || !place || game == G_ALONG || game == G_TUNES) return;   /* (JOIN IN keeps its own time, in ticks; a tune played back, in game_run) */
     while (cue_i < cue_n && (int32_t)(fm1_ms - cue_t0) >= (int32_t)cue[cue_i].t) {
-        if (cue[cue_i].key == 255u) s_trig++;
+        if (cue[cue_i].key >= CUE_DRUM) { cue_drum = cue[cue_i].key - CUE_DRUM; cue_drum_t = fm1_ms; drum_hit(cue_drum, S_CUE); }
         else {
             if (cue_on != 255u) stop(cue_on, cue_pi, S_CUE);
             cue_on = 53u + cue[cue_i].key;
@@ -978,13 +981,13 @@ static void tune_band(char c)                   /* she played the tune's next no
 static uint8_t copy_note(void)                  /* COPY ME's notes: C D E, then G A, then the C above */
 {
     static const uint8_t POOL[6] = {7, 9, 11, 14, 16, 19};      /* (they sound well in any order) */
-    uint32_t lvl = set.lvl[G_COPY];
+    uint32_t lvl = LVL(G_COPY);
     return POOL[rnd_n(lvl < 4u ? 3u : lvl < 7u ? 5u : 6u)];
 }
 static void game_new(void)                      /* the next question */
 {
     static const uint8_t WHITE[7] = {0, 2, 4, 5, 7, 9, 11};
-    uint32_t lvl = set.lvl[game], i, pc;
+    uint32_t lvl = LVL(game), i, pc;
     g_miss = 0;
     hint_mask = 0;
     cue_n = 0;
@@ -1064,7 +1067,46 @@ static void game_new(void)                      /* the next question */
         q_mask = m;
         q_n = hits;
         for (i = 0; i < 8u; i++)
-            if (m >> i & 1u) cue_add(i * 300u, 255, 0);
+            if (m >> i & 1u) cue_add(i * 300u, CUE_DRUM + 2u, 0);
+        cue_go(600);
+        break;
+    }
+    case G_EAR: {                               /* a note: which key was it? The keys it may be are lit, two at first */
+        static const uint32_t POOL[6] = {0, 0x4080u, 0x4880u, 0x5A80u, 0x55A80u, 0xD5A80u};   /* C G; C E G; C to G; to B; to the C above */
+        uint32_t n = 0, at;
+        for (i = 0; i < 27u; i++) n += POOL[lvl] >> i & 1u;
+        do {
+            at = rnd_n(n);
+            for (i = 0; i < 27u; i++)
+                if (POOL[lvl] >> i & 1u && !at--) break;
+        } while (i == q_pc);
+        q_pc = i;                               /* (here a key, not a pitch class) */
+        hint_mask = POOL[lvl];
+        cue_add(0, q_pc, 700);
+        cue_hide = 1;
+        cue_go(500);
+        break;
+    }
+    case G_DRUM: {                              /* a beat on two drums, then three: play it back on their keys */
+        static const uint8_t DRUM[3] = {0, 2, 4};               /* kick, snare, clap: C D E */
+        uint32_t hits = lvl <= 1u ? 3u : lvl <= 3u ? 4u : lvl + 1u, m, n, sig, seen;
+        do {                                    /* (never the last beat again, and never one drum only) */
+            m = 1u; n = 1u;
+            while (n < hits) {
+                i = lvl <= 2u ? rnd_n(4) * 2u : rnd_n(8);       /* quarters first, eighths from level 3 */
+                if (!(m >> i & 1u)) { m |= 1u << i; n++; }
+            }
+            for (i = 0, sig = m, seen = 0; i < hits; i++) {
+                q_note[i] = DRUM[rnd_n(lvl >= 4u ? 3u : 2u)];
+                sig = sig * 5u + q_note[i];
+                seen |= 1u << q_note[i];
+            }
+        } while (sig == q_hi || !(seen & (seen - 1u)));
+        q_hi = sig;
+        q_mask = m;
+        q_n = hits;
+        for (i = 0, n = 0; i < 8u; i++)
+            if (m >> i & 1u) cue_add(i * 300u, CUE_DRUM + q_note[n++], 0);
         cue_go(600);
         break;
     }
@@ -1101,9 +1143,9 @@ static void game_right(void)
     static const char *const YES[4] = {"YES!", "THAT'S IT!", "GOOD EAR!", "RIGHT!"};
     flash_until = fm1_ms + BREATH_MS;          /* every key breathes once, dim to bright to dim: no sound over hers */
     yuzu_until = fm1_ms + 1500u;
-    if (++g_ok >= 5u && set.lvl[game] < GMAX[game]) {
+    if (++g_ok >= 5u && LVL(game) < GMAX[game]) {
         uint32_t had = babies();
-        set.lvl[game]++;
+        LVL(game)++;
         g_ok = 0;
         set_dirty = 1;
         say(babies() > had ? "A NEW BABY! SEE IT AT HOME" : "LEVEL UP!");
@@ -1117,7 +1159,7 @@ static void game_again(void)                    /* not right: once more, the sam
 {
     say(game == G_CHORD || game == G_FIND ? "TRY ANOTHER KEY" : "LISTEN AGAIN");
     if (g_miss < 9u) g_miss++;
-    if (cue_n) { cue_hide = 0; cue_go(900); }   /* (HIGH LOW: this time the keys light) */
+    if (cue_n) { cue_hide = game == G_EAR; cue_go(900); }   /* (HIGH LOW: this time the keys light. GUESS IT: never) */
 }
 static void game_key(uint32_t k)                /* a key went down */
 {
@@ -1149,7 +1191,7 @@ static void game_key(uint32_t k)                /* a key went down */
         if (k == q_note[q_pos]) {
             if (++q_pos >= q_n) {
                 if (q_n < 12u) q_note[q_n++] = copy_note();
-                if (q_n - 1u > set.lvl[game]) { set.lvl[game] = (uint8_t)(q_n - 1u); set_dirty = 1; }
+                if (q_n - 1u > LVL(game)) { LVL(game) = (uint8_t)(q_n - 1u); set_dirty = 1; }
                 game_right();
             }
         } else {
@@ -1174,6 +1216,27 @@ static void game_key(uint32_t k)                /* a key went down */
                 if (q_mask >> i & 1u) {
                     int32_t want = (int32_t)(i * 300u), d = want - (int32_t)(tap_t[j] - tap_t[0]), tol = 120 + want / 6;
                     if (d < -tol || d > tol) ok = 0;
+                    j++;
+                }
+            if (ok) game_right();
+            else game_again();
+        }
+        break;
+    case G_EAR:
+        if (k == q_pc) { hint_mask = 1u << q_pc; game_right(); }
+        else {
+            game_again();
+            if (g_miss >= 2u) hint_mask = 1u << q_pc;           /* twice wrong: its key alone is lit */
+        }
+        break;
+    case G_DRUM:
+        if (q_pos < 8u) { tap_pc[q_pos] = (uint8_t)pc; tap_t[q_pos++] = fm1_ms; }
+        if (q_pos >= q_n) {
+            uint32_t i, j = 0, ok = 1;
+            for (i = 0; i < 8u; i++)            /* the right drums in their order, and each about when its hit was */
+                if (q_mask >> i & 1u) {
+                    int32_t want = (int32_t)(i * 300u), d = want - (int32_t)(tap_t[j] - tap_t[0]), tol = 150 + want / 5;
+                    if (tap_pc[j] != q_note[j] || d < -tol || d > tol) ok = 0;
                     j++;
                 }
             if (ok) game_right();
@@ -1236,12 +1299,12 @@ static void game_run(uint32_t keys)             /* every pass of the main loop *
         else if (n >= 3u && keys != chord_seen) { chord_seen = keys; if (++g_miss >= 2u) hint_mask = pc_keys(q_mask, 7, 18); }
         if (fm1_ms - q_t0 > 9000u) hint_mask = pc_keys(q_mask, 7, 18);   /* stuck: the keys light */
     }
-    if (game == G_TAP && q_pos && q_pos < q_n && fm1_ms - tap_t[q_pos - 1u] > 2500u) game_again();
+    if ((game == G_TAP || game == G_DRUM) && q_pos && q_pos < q_n && fm1_ms - tap_t[q_pos - 1u] > 2500u) game_again();
 }
 static void game_enter(uint32_t g)
 {
     game = (uint8_t)(g % NGAME);
-    if (!set.lvl[game] || set.lvl[game] > GMAX[game]) set.lvl[game] = 1;
+    if (!LVL(game) || LVL(game) > GMAX[game]) LVL(game) = 1;
     g_ok = 0;
     q_n = 0;
     q_pc = 99;
@@ -1286,6 +1349,13 @@ static void game_text(char *big, char *small)   /* what the game shows */
         break;
     case G_TAP:
         sput(small, g_phase == P_CUE ? "LISTEN TO THE DRUM" : "TAP IT ON ANY KEY");
+        break;
+    case G_EAR:
+        sput(big, g_phase == P_DONE ? NN[(53u + q_pc) % 12u] : g_phase == P_CUE ? "LISTEN" : "?");
+        sput(small, "WHICH KEY WAS IT?");
+        break;
+    case G_DRUM:
+        sput(small, g_phase == P_CUE ? "LISTEN TO THE DRUMS" : LVL(game) >= 4u ? "C KICK  D SNARE  E CLAP" : "C KICK    D SNARE");
         break;
     }
 }
@@ -1397,6 +1467,18 @@ static void draw_panel(const char *big, const char *small, uint16_t col)   /* tw
             cv_rect(x, 8, 20, 24, C_GREY);
             if (q_mask >> i & 1u) cv_rect(x + 2, 10, 16, 20, C_WHITE);
             else cv_rect(x + 2, 10, 16, 20, C_BLACK);
+        }
+    }
+    if (place && game == G_DRUM) {              /* the beat: eight boxes, the kick low and orange, the snare in the middle, the clap high and blue */
+        uint32_t i, n = 0;
+        for (i = 0; i < 8u; i++) {
+            int32_t x = 28 + (int32_t)i * 23;
+            cv_rect(x, 8, 20, 24, C_GREY);
+            cv_rect(x + 2, 10, 16, 20, C_BLACK);
+            if (q_mask >> i & 1u) {
+                uint32_t d = q_note[n++];
+                cv_rect(x + 2, d == 0u ? 23 : d == 2u ? 16 : 10, 16, 7, d == 0u ? C_LEAD : d == 2u ? C_WHITE : C_FIT);
+            }
         }
     }
     cv_blit(0, 44);
@@ -1640,7 +1722,7 @@ static uint32_t babies(void)
 {
     uint32_t g, ups = 0;
     for (g = 0; g < NGAME; g++)
-        if (set.lvl[g] > 1u && set.lvl[g] <= GMAX[g]) ups += set.lvl[g] - 1u;
+        if (LVL(g) > 1u && LVL(g) <= GMAX[g]) ups += LVL(g) - 1u;
     return 1u + (ups / 3u > 4u ? 4u : ups / 3u);
 }
 static const int16_t SPOT[5][2] = {{128, 104}, {96, 170}, {182, 110}, {150, 184}, {46, 186}};   /* land, pond, land, pond, pond */
@@ -1917,7 +1999,7 @@ static void status_text(char *s)                /* what is going on, in one line
     char *p = s;
     if ((int32_t)(msg_until - fm1_ms) > 0) { sput(s, msg); return; }
     if (place) {
-        p = nput(sput(p, "LEVEL "), set.lvl[game]);
+        p = nput(sput(p, "LEVEL "), LVL(game));
         sput(p, "   SEL: ANOTHER ONE");
     } else if (rec == R_ARMED) sput(p, "REC: PLAY SOMETHING");
     else if (rec == R_FIRST) sput(p, "RECORDING");
@@ -2012,10 +2094,14 @@ static void app_main(void)
     uint8_t held_note[27] = {0}, held_pi[27] = {0}, held[27] = {0};
     char line[40], big[40] = "", small[40] = "";
 
-    if (settings_load(&set, sizeof set)) {      /* (or the settings of before PLAY ALONG and the songs: 9 bytes, the same start) */
-        if (settings_load(&set, 9)) { set.quiet = 0; set.letters = 1; set.song = 0; for (k = 0; k < NGAME; k++) set.lvl[k] = 1; }
-        set.lvl[G_ALONG] = 1;
-        set.slot = 0;
+    if (settings_load(&set, sizeof set)) {      /* (or the settings of before GUESS IT and DRUM IT: 11 bytes; of before PLAY ALONG
+                                                   and the songs: 9. Each the same start) */
+        if (settings_load(&set, 11)) {
+            if (settings_load(&set, 9)) { set.quiet = 0; set.letters = 1; set.song = 0; for (k = 0; k < NGAME; k++) LVL(k) = 1; }
+            set.lvl[G_ALONG] = 1;
+            set.slot = 0;
+        }
+        for (k = 7; k < NGAME; k++) LVL(k) = 1;
     }
     if (set.slot >= NSAVE) set.slot = 0;
     g_quiet = set.quiet ? 1 : 0;
@@ -2043,7 +2129,7 @@ static void app_main(void)
                 if (!arp_on) {                  /* (with the arp on, arp_run plays the held keys) */
                     held[k] = 1;
                     held_note[k] = (uint8_t)(53 + 12 * oct + (int32_t)k);
-                    held_pi[k] = cur_patch;
+                    held_pi[k] = place && game == G_DRUM ? PI_DRUMS : cur_patch;   /* (DRUM IT: the keys are the kit) */
                     live_on(held_note[k], held_pi[k], 1);
                 }
                 bounce_t = fm1_ms;
@@ -2053,7 +2139,7 @@ static void app_main(void)
             if (up >> k & 1u && held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
         }
         if (place) game_run(keys);
-        click_mute = place && game == G_TAP;
+        click_mute = place && (game == G_TAP || game == G_DRUM);
 
         /* ---- the buttons */
         b = fm1_input_edges(&rel) | pond_b;     /* (and the button that closed the pond) */
@@ -2256,10 +2342,15 @@ static void app_main(void)
                     && (voice[k].src == S_LIVE || voice[k].src == S_LOOP || (voice[k].src == S_CUE && !cue_hide && voice[k].note == cue_on)))
                     lit |= 1u << (voice[k].note - base);
             if (cur_patch >= PI_DRUMS && !arp_on && !place) lit |= keys;   /* (drums and animals are no voices: the keys held) */
+            if (place && game == G_DRUM) {      /* (nor here: her keys, and the key of the drum it plays) */
+                lit |= keys;
+                if (fm1_ms - cue_drum_t < 150u) lit |= 1u << (7u + cue_drum);
+            }
         }
         if (place) {
             goal = hint_mask;
             if (game == G_TUNES && !tune_play) goal = 1u << song_key(SONG[set.song % NSONG].notes[song_pos]);
+            if (game == G_DRUM && g_phase == P_WAIT && g_miss >= 2u && q_pos < q_n) goal = 1u << (7u + q_note[q_pos]);   /* twice wrong: the next drum's key */
             glow = 1u << 7 | 1u << 19;          /* C4, C5: to find your way */
         } else
             glow = band > CLICK && band_led ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */
@@ -2317,7 +2408,7 @@ static void app_main(void)
         }
         if (place) {                            /* the game's question */
             game_text(big, small);
-            for (hash = 5381u + g_phase + q_mask, k = 0; big[k]; k++) hash = hash * 33u ^ (uint8_t)big[k];
+            for (hash = 5381u + g_phase + q_mask + (game == G_DRUM ? q_hi * 131u : 0u), k = 0; big[k]; k++) hash = hash * 33u ^ (uint8_t)big[k];
             for (k = 0; small[k]; k++) hash = hash * 33u ^ (uint8_t)small[k];
             if (hash != panel_drawn) { panel_drawn = hash; draw_panel(big, small, C_WHITE); }
         } else if (letters) {                   /* the notes she holds, by name; the last ones stay, greyed */
