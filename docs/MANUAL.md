@@ -26,7 +26,7 @@ installers like the other community firmwares.
   ([FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter)) or the tools listed under "Firmware update
   and recovery" in [awesome-fm-1](https://github.com/cicloid/awesome-fm-1).
 
-Do the first install yourself, with the computer at hand, before the FM-1 is wrapped up as a present.
+Install it and try it yourself before the FM-1 is wrapped up as a present.
 
 ## Before you hand it over
 

@@ -34,14 +34,15 @@ three levels gained in the games, another baby moves into the pond, up to five.
 
 ## Install
 
-Capy runs on an FM-1, but installing firmware is at your own risk. Do it with a computer nearby, and read
-[If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) first.
+Installing firmware is at your own risk. Capy has been tried on one FM-1 so far. Read
+[If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) before you start.
 
 1. Get `capy.fwsc` from the newest run under [Actions](https://github.com/trapperl/capy-fm1/actions) (the
    `capy-fwsc` artifact; GitHub asks you to sign in for that), or [build it](#build-it).
 2. Connect the FM-1 with a USB **data** cable and switch it on.
 3. Install it: `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before
-   it writes. A browser installer that takes a `.fwsc` file works too.
+   it writes. A browser installer that takes a `.fwsc` file, such as the
+   [FM-1 Firmware Hub](https://thefirmwarehub.com) in Chrome or Edge, works too.
 4. Don't unplug it while it writes. The FM-1 restarts into Capy.
 
 To go back, install M-VAVE's own V15 package the same way. The [manual](docs/MANUAL.md) has the details, what to
