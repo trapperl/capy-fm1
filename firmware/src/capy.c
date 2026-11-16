@@ -25,7 +25,7 @@
  *   EDIT        tap: take the last layer away. Held a second: erase the recording
  *   SAVE        keep the recording for next time
  *   SEL         the games (SELECT: which one; SEL again: another question): TUNES, FIND IT, COPY ME, HIGH LOW,
- *               CHORDS, TAP IT
+ *               CHORDS, TAP IT, JOIN IN. A finished tune is played back, with the band
  *   HOME        back to the start: piano, everything off. Held 3 s (grown-ups): QUIET, half the loudness
  *   (nothing touched for two minutes: the pond comes back, asleep, until something is touched)
  *
@@ -855,7 +855,7 @@ static void cue_go(uint32_t wait_ms) { cue_i = 0; cue_t0 = fm1_ms + wait_ms; g_p
 static void cue_run(void)
 {
     if (cue_on != 255u && (int32_t)(fm1_ms - cue_off) >= 0) { stop(cue_on, cue_pi, S_CUE); cue_on = 255; }
-    if (g_phase != P_CUE || !place || game == G_ALONG) return;   /* (PLAY ALONG keeps its own time, in ticks) */
+    if (g_phase != P_CUE || !place || game == G_ALONG || game == G_TUNES) return;   /* (JOIN IN keeps its own time, in ticks; a tune played back, in game_run) */
     while (cue_i < cue_n && (int32_t)(fm1_ms - cue_t0) >= (int32_t)cue[cue_i].t) {
         if (cue[cue_i].key == 255u) s_trig++;
         else {
@@ -872,19 +872,72 @@ static void cue_run(void)
 
 /* c d e f g a b = C4..B4, C D E F G = C5..G5, x y z = G3 A3 B3. Traditional tunes, written out note by note. */
 /* ch: the band under it, a letter where it plays a chord (C F G; D E A the minor ones), '-' where only the hat ticks */
-static const struct { const char *name, *notes, *ch; } SONG[] = {
-    {"TWINKLE TWINKLE", "ccggaagffeeddcggffeedggffeedccggaagffeeddc", "C-C-F-CF-C-G-CC-F-C-GC-F-C-GC-C-F-CF-C-G-C"},
-    {"MARY HAD A LAMB", "edcdeeedddeggedcdeeeeddedc", "C---C--G--C--C---C---G---C"},
-    {"ODE TO JOY", "eefggfedccdeeddeefggfedccdedcc", "C---G---C---G--C---G---C---GC-"},
-    {"FRERE JACQUES", "cdeccdecefgefggagfecgagfeccxccxc", "C---C---C--C--C---C-C---C-CGCCGC"},
-    {"ROW YOUR BOAT", "cccdeedefgCCCgggeeecccgfedc", "C----C----C-----C-----G---C"},
-    {"OLD MACDONALD", "cccxyyxeeddcxcccxyyxeeddc", "C---F-CC-G-C-C---F-CC-G-C"},
-    {"JINGLE BELLS", "eeeeeeegcdefffffeeeeddedgeeeeeeegcdefffffeeeggfdc", "C--C--C----F----C---G----C--C--C----F----C--G---C"},
-    {"LONDON BRIDGE", "gagfefgdefefggagfefgdgec", "C---C--G--C--C---C--G-C-"},
-    {"HAPPY BIRTHDAY", "ggagCbggagDCggGECbaFFECDC", "--C--G--G--C--C---F--C-GC"},
+/* dur: how long each note is, in eighth notes; ms: how long an eighth is. They are for when it plays the tune back. */
+static const struct { const char *name; uint16_t ms; const char *notes, *ch, *dur; } SONG[] = {
+    {"TWINKLE TWINKLE", 250, "ccggaagffeeddcggffeedggffeedccggaagffeeddc",
+     "C-C-F-CF-C-G-CC-F-C-GC-F-C-GC-C-F-CF-C-G-C",
+     "222222422222242222224222222422222242222224"},
+    {"MARY HAD A LAMB", 230, "edcdeeedddeggedcdeeeeddedc",
+     "C---C--G--C--C---C---G---C",
+     "22222242242242222222222228"},
+    {"ODE TO JOY", 230, "eefggfedccdeeddeefggfedccdedcc",
+     "C---G---C---G--C---G---C---GC-",
+     "222222222222314222222222222314"},
+    {"FRERE JACQUES", 230, "cdeccdecefgefggagfecgagfeccxccxc",
+     "C---C---C--C--C---C-C---C-CGCCGC",
+     "22222222224224111122111122224224"},
+    {"ROW YOUR BOAT", 190, "cccdeedefgCCCgggeeecccgfedc",
+     "C----C----C-----C-----G---C",
+     "332132121611111111111121216"},
+    {"OLD MACDONALD", 220, "cccxyyxeeddcxcccxyyxeeddc",
+     "C---F-CC-G-C-C---F-CC-G-C",
+     "2222224222262222222422228"},
+    {"JINGLE BELLS", 190, "eeeeeeegcdefffffeeeeeddedgeeeeeeegcdefffffeeeeggfdc",
+     "C--C--C----F----C----G----C--C--C----F----C---G---C",
+     "224224223182231222112222442242242231822312221122228"},
+    {"LONDON BRIDGE", 230, "gagfefgdefefggagfefgdgec",
+     "C---C--G--C--C---C--G-C-",
+     "312222422422431222244426"},
+    {"HAPPY BIRTHDAY", 260, "ggagCbggagDCggGECbaFFECDC",
+     "--C--G--G--C--C---F--C-GC",
+     "1122241122241122224112226"},
+    {"HOT CROSS BUNS", 250, "edcedcccccddddedc",
+     "CGCCGCC---G---CGC",
+     "22422411111111224"},
+    {"RAIN RAIN GO AWAY", 250, "geggeggeaggeffddffdgfedecc",
+     "C---CC------D------C------",
+     "22112111111211111121111112"},
+    {"AU CLAIR DE LA LUNE", 230, "cccdedceddccccdedceddcddddyydczyxcccdedceddc",
+     "C---CGC-G-CC---CGC-G-CD---A-D-G-GC---CGC-G-C",
+     "22224422228222244222282222442222822224422228"},
+    {"LIGHTLY ROW", 230, "geefddcdefggggeefddceggcdddddefeeeeefggeefddceggc",
+     "C--G--C---C--C--G--C---CG---G--C---C--C--G--C---C",
+     "2242242222224224224222282222224222222422422422228"},
+    {"YANKEE DOODLE", 200, "ccdecedxccdeczccdefedczxyzcc",
+     "C---C-G-C---CGC---F---G---C-",
+     "2222222222224422222222222244"},
+    {"ITSY BITSY SPIDER", 200, "gcccdeeedcdeceefggfefgeccdeedcdeczzcccdeeedcdec",
+     "-C---C--G---CC--G-G---CC--A-A---CG-C---C--G---C",
+     "12121321212163213321216321332121321212132121216"},
+    {"POP GOES THE WEASEL", 200, "ccddegecccddecccddegecadfec",
+     "C-G-C---C-G-C-C-G-C---FG-C-",
+     "212111132121332121111332133"},
+    {"ALOUETTE", 230, "cdeedcdecxcdeedcdec",
+     "C---G---C-C---G---C",
+     "3122111122312211114"},
+    {"LONG LONG AGO", 300, "ccdeefgagegfedfedc",
+     "C--C--C--CG--GG--C",
+     "211211211421142114"},
+    {"GOOD KING WENCESLAS", 230, "cccdccxyxyzcccccdccxyxyzccgfededcyxyzccxxyzccdgfedcfc",
+     "C---C--F-G-C-C---C--F-G-C-C-G-C--F-G-C-G---C-GC-G-CFC",
+     "22222242222442222224222244222222422224422222242222448"},
+    {"BRAHMS' LULLABY", 270, "eegeegegCbaagdefddefdfbagbCccCafgecfgagccCafgecfedc",
+     "--C--C--C--G---G---G--G---C--F--C--F--C--F--C--G--C",
+     "113124112312211221141111224114114112224114114112226"},
 };
 #define NSONG (sizeof SONG / sizeof SONG[0])
 static uint32_t song_pos;
+static uint32_t tune_play, tp_i, tp_t;           /* the tune is finished: it plays it back, the band with it, at speed */
 static uint32_t song_key(char c)                /* the key (0 = F3) of a song letter */
 {
     static const uint8_t LOW[7] = {16, 18, 7, 9, 11, 12, 14};   /* a b c d e f g */
@@ -938,6 +991,7 @@ static void game_new(void)                      /* the next question */
     cue_hide = 0;
     g_phase = P_WAIT;
     q_t0 = fm1_ms;
+    tune_play = 0;
     switch (game) {
     case G_TUNES:
         song_pos = 0;
@@ -999,11 +1053,14 @@ static void game_new(void)                      /* the next question */
         break;
     }
     case G_TAP: {                               /* a rhythm on the drum: tap it back on any key */
-        uint32_t hits = lvl + 2u, m = 1u, n = 1u;
-        while (n < hits) {
-            i = lvl <= 2u ? rnd_n(4) * 2u : rnd_n(8);           /* quarters first, eighths later */
-            if (!(m >> i & 1u)) { m |= 1u << i; n++; }
-        }
+        uint32_t hits = lvl + 2u, m, n;
+        do {                                    /* (never the rhythm of the last question again) */
+            m = 1u; n = 1u;
+            while (n < hits) {
+                i = lvl <= 1u ? rnd_n(4) * 2u : rnd_n(8);       /* quarters first, eighths from level 2 (four quarters are one rhythm only) */
+                if (!(m >> i & 1u)) { m |= 1u << i; n++; }
+            }
+        } while (m == q_mask);
         q_mask = m;
         q_n = hits;
         for (i = 0; i < 8u; i++)
@@ -1070,13 +1127,13 @@ static void game_key(uint32_t k)                /* a key went down */
     case G_TUNES:
         if (k != song_key(SONG[set.song % NSONG].notes[song_pos])) break;
         tune_band(SONG[set.song % NSONG].ch[song_pos]);
-        if (++song_pos >= song_len()) {
-            y_trig++;                           /* the last note: a cymbal */
-            set.song = (uint8_t)((set.song + 1u) % NSONG);   /* on to the next tune */
-            set_dirty = 1;
-            song_pos = 0;
-            say("WELL DONE!");
-            party_until = fm1_ms + 1600u;
+        if (++song_pos >= song_len()) {         /* the last note: now it plays her tune back, as it goes */
+            tune_play = 1;
+            tp_i = 0;
+            tp_t = fm1_ms + 1500u;
+            g_phase = P_CUE;
+            say("WELL DONE! NOW LISTEN");
+            party_until = fm1_ms + 1200u;
         }
         break;
     case G_FIND:
@@ -1131,6 +1188,25 @@ static void game_run(uint32_t keys)             /* every pass of the main loop *
 {
     if (tune_off && (int32_t)(fm1_ms - tune_off) >= 0) { band_quiet(); tune_off = 0; }   /* (the band under a tune rings out) */
     if (g_phase == P_DONE && (int32_t)(fm1_ms - g_t) >= 0) game_new();
+    if (game == G_TUNES && tune_play && (int32_t)(fm1_ms - tp_t) >= 0) {
+        uint32_t sg = set.song % NSONG;
+        if (cue_on != 255u) { stop(cue_on, cue_pi, S_CUE); cue_on = 255; }
+        if (!SONG[sg].notes[tp_i]) {            /* it is over: a cymbal, and on to the next tune */
+            y_trig++;
+            set.song = (uint8_t)((set.song + 1u) % NSONG);
+            set_dirty = 1;
+            game_new();
+        } else {
+            uint32_t d = (uint32_t)(SONG[sg].dur[tp_i] - '0') * SONG[sg].ms;
+            cue_on = 53u + song_key(SONG[sg].notes[tp_i]);
+            cue_pi = cur_patch;
+            cue_off = fm1_ms + d - 40u;
+            play(cue_on, cue_pi, S_CUE, 256);
+            tune_band(SONG[sg].ch[tp_i]);
+            tp_t += d;
+            tp_i++;
+        }
+    }
     if (game == G_ALONG && (int32_t)(tick - al_t0) >= 0) {
         uint32_t pos = tick - al_t0, bar = 4u * PPQ;
         if (g_phase == P_CUE) {                 /* the first bar: it plays the tune, the keys light */
@@ -1184,6 +1260,7 @@ static void game_text(char *big, char *small)   /* what the game shows */
     big[0] = small[0] = 0;
     switch (game) {
     case G_TUNES:
+        if (tune_play) { sput(big, "LISTEN"); sput(small, SONG[set.song % NSONG].name); break; }
         sput(big, NN[(53u + song_key(SONG[set.song % NSONG].notes[song_pos])) % 12u]);
         nput(sput(nput(sput(sput(small, SONG[set.song % NSONG].name), "  "), song_pos), "/"), song_len());
         break;
@@ -2182,7 +2259,7 @@ static void app_main(void)
         }
         if (place) {
             goal = hint_mask;
-            if (game == G_TUNES) goal = 1u << song_key(SONG[set.song % NSONG].notes[song_pos]);
+            if (game == G_TUNES && !tune_play) goal = 1u << song_key(SONG[set.song % NSONG].notes[song_pos]);
             glow = 1u << 7 | 1u << 19;          /* C4, C5: to find your way */
         } else
             glow = band > CLICK && band_led ? pc_keys(chord_pcs(band_ch), 0, 26) : 1u << 7 | 1u << 19;   /* with the band: the notes that fit */

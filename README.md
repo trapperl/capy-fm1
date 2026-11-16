@@ -99,7 +99,7 @@ metronome click on and off, and **HOME** leaves. The instruments, the knobs and 
 
 | Game | How it is played | How it grows |
 | --- | --- | --- |
-| **TUNES** | The next key of a tune lights green and waits, and the screen says its letter. With each right note a band plays along, at the child's own pace. | Nine traditional tunes, one after the other. |
+| **TUNES** | The next key of a tune lights green and waits, and the screen says its letter. With each right note a band plays along, at the child's own pace. After the last note Capy plays the whole tune back, with the band, as it goes. | Twenty traditional tunes, one after the other. |
 | **FIND IT** | The screen shows a letter; the child finds that key. A wrong key is named ("THAT WAS C"), and after two tries the right keys light up. | C D E, then up to G, then all white keys, then the black keys. |
 | **COPY ME** | It plays a few notes, to be played back. Each time that goes right, it adds a note. | From 2 notes up to 12, on more keys. |
 | **HIGH LOW** | It plays two notes: was the second higher or lower? The answer is OCT+ or OCT-. | From an octave apart down to neighbouring keys. |

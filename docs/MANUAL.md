@@ -118,7 +118,10 @@ The tables in the [README](../README.md#playing) are complete. A few details:
   drums), and DRUMS and ANIMALS are left out of the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
   the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
 - The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
-  Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.
+  Jingle Bells, London Bridge, Happy Birthday, Hot Cross Buns, Rain Rain Go Away, Au Clair de la Lune, Lightly Row,
+  Yankee Doodle, Itsy Bitsy Spider, Pop Goes the Weasel, Alouette, Long Long Ago, Good King Wenceslas and Brahms'
+  Lullaby. After the last note of a tune the screen says LISTEN and Capy plays the whole tune back with the band;
+  SEL skips that and goes on to the next tune. All of them are on the white keys.
 
 ## MIDI
 
