@@ -34,18 +34,34 @@ three levels gained in the games, another baby moves into the pond, up to five.
 
 ## Install
 
-Installing firmware is at your own risk. Capy has been tried on one FM-1 so far, installed from Windows.
+Installing firmware is at your own risk. So far Capy has been installed on one FM-1, from Windows, over another
+community firmware. Installing it over M-VAVE's own firmware has not been tried yet.
 
-1. Download this repository ([ZIP](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip)) and unpack
-   it. The firmware, `capy.fwsc`, and its installer are both in it.
-2. Install [Python 3](https://www.python.org/downloads/), then the two packages the installer needs:
-   `pip install mido python-rtmidi`
-3. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
-4. In the unpacked folder, run `python tools/fm1_install.py capy.fwsc`. It shows which FM-1 it found and asks
-   before it writes. Don't unplug the FM-1 while it writes; after about a minute it restarts into Capy.
+1. Download this repository as a [ZIP file](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip) and
+   unpack it. You get a folder `capy-fm1-main` with the firmware, `capy.fwsc`, and its installer inside.
+2. Install [Python 3](https://www.python.org/downloads/). On Windows, tick "Add python.exe to PATH" in its
+   installer.
+3. Open a terminal in the `capy-fm1-main` folder. On Windows: open the folder in Explorer, type `cmd` in the
+   address bar and press Enter.
+4. Type this and press Enter. It installs the two Python packages the installer needs:
 
-The [manual](docs/MANUAL.md) covers what to do [if it goes wrong](docs/MANUAL.md#if-it-goes-wrong), how to go
-back to M-VAVE's firmware, and what to set before handing the FM-1 to a child.
+   ```
+   pip install mido python-rtmidi
+   ```
+
+5. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
+6. Type this and press Enter:
+
+   ```
+   python tools/fm1_install.py capy.fwsc
+   ```
+
+   It shows which FM-1 it found and asks "Install?". Type `y` and press Enter. Don't unplug the FM-1 while it
+   writes. After a minute or two the FM-1 restarts and shows Capy's pond.
+
+If it says "FM-1 not found", check that the cable carries data and that no other program is using the FM-1. The
+[manual](docs/MANUAL.md) covers what else can [go wrong](docs/MANUAL.md#if-it-goes-wrong), how to go back to
+M-VAVE's firmware, and what to set before handing the FM-1 to a child.
 
 ## Playing
 
@@ -87,32 +103,46 @@ metronome click on and off, and **HOME** leaves. The instruments, the knobs and 
 | **JOIN IN** | Drums play. For one bar it plays a short tune over them while the keys light; the next bar is the child's turn, with each key lit as its turn comes. If the tune isn't finished by the end of the bar, it comes round again. | From three notes on the beats to seven on any eighth note. |
 | **TAP IT** | A drum plays a rhythm, shown as boxes on the screen, to be tapped back on any key. | From three slow hits to six quick ones. |
 
-## Build it
+## For developers
 
 Capy is built on [Dinghy](https://github.com/zvenson/dinghy), which carries
 [Felucca](https://github.com/hugelton/Felucca)'s platform: the updater, the USB rescue, USB-MIDI and USB audio.
 The instrument itself is one file, [firmware/src/capy.c](firmware/src/capy.c). The platform's calls are in
 [docs/API.md](docs/API.md), the chip's rules in [docs/RULES.md](docs/RULES.md).
 
-**Try it without an FM-1.** The simulator runs the same code on a computer and writes the screen and the sound to
-files. It needs a C compiler and Python 3 with Pillow:
+### Run Capy on a computer, without an FM-1
+
+The simulator compiles the same code for your computer. It is not interactive: a script presses keys and buttons
+at set times, and the simulator writes what the FM-1 would have played and shown into files.
+
+It needs Linux (or Windows with WSL), a C compiler and Python 3. In a terminal:
 
 ```sh
-tests/run_host.sh tests/scripts/tour.txt    # -> build/host/capy.wav and the screens as PNG
+git clone https://github.com/trapperl/capy-fm1.git
+cd capy-fm1
+pip3 install Pillow
+tests/run_host.sh tests/scripts/tour.txt
 ```
 
-**Build it for the FM-1.** You need Linux on x86-64, Python 3 with Pillow, JieLi's toolchain and its AC79 SDK:
+That runs a tour of Capy and leaves the result in `build/host/`: the sound as `capy.wav`, and the screen at the
+moments the script asks for as `capy-<milliseconds>.png`. A script is plain text, one event a line, such as
+`900 keys 0x80` (at 900 ms, hold middle C) or `1500 shot` (save the screen). The scripts are in
+[tests/scripts](tests/scripts); `tour.txt` begins with the numbers of the buttons and knobs.
+
+### Build the firmware
+
+This needs Linux on x86-64, Python 3, JieLi's toolchain and its AC79 SDK. In a terminal, in the `capy-fm1` folder:
 
 ```sh
 pip3 install Pillow mido python-rtmidi
 tools/get_toolchain.sh
 git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
     https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
-./build.sh                                        # -> build/capy.fwsc
-python3 tools/fm1_install.py build/capy.fwsc      # over USB; asks before it writes
+./build.sh
 ```
 
-The `capy.fwsc` in this repository is the package built from the code beside it.
+The package is then `build/capy.fwsc`. Install it as above, with `build/capy.fwsc` in place of `capy.fwsc`. The
+`capy.fwsc` in this repository is the package built from the code beside it.
 
 ## Licence
 

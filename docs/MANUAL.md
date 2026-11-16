@@ -4,31 +4,48 @@ For the grown-up who hands it over. The child needs none of this.
 
 ## Install
 
-1. Download this repository ([ZIP](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip)) and unpack
-   it. The firmware, `capy.fwsc`, and its installer are both in it.
-2. Install [Python 3](https://www.python.org/downloads/), then the two packages the installer needs:
-   `pip install mido python-rtmidi`
-3. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
-4. In the unpacked folder, run `python tools/fm1_install.py capy.fwsc`. It shows which FM-1 it found and asks
-   before it writes. Don't unplug the FM-1 while it writes; after about a minute it restarts into Capy.
+Installing firmware is at your own risk. So far Capy has been installed on one FM-1, from Windows, over another
+community firmware. Installing it over M-VAVE's own firmware has not been tried yet.
 
-This was done from Windows, onto an FM-1 running M-VAVE's own firmware and onto ones running other community
-firmwares. If the installer says the FM-1 did not come back, it has usually restarted under a new name: run
-`python tools/fm1_install.py --info` to see it.
+1. Download this repository as a [ZIP file](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip) and
+   unpack it. You get a folder `capy-fm1-main` with the firmware, `capy.fwsc`, and its installer inside.
+2. Install [Python 3](https://www.python.org/downloads/). On Windows, tick "Add python.exe to PATH" in its
+   installer.
+3. Open a terminal in the `capy-fm1-main` folder. On Windows: open the folder in Explorer, type `cmd` in the
+   address bar and press Enter.
+4. Type this and press Enter. It installs the two Python packages the installer needs:
+
+   ```
+   pip install mido python-rtmidi
+   ```
+
+5. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
+6. Type this and press Enter:
+
+   ```
+   python tools/fm1_install.py capy.fwsc
+   ```
+
+   It shows which FM-1 it found and asks "Install?". Type `y` and press Enter. Don't unplug the FM-1 while it
+   writes. After a minute or two the FM-1 restarts and shows Capy's pond.
 
 **Going back to M-VAVE's firmware:** [The Firmware Hub](https://thefirmwarehub.com), in Chrome or Edge, has a
 "Back to official V15" button for the FM-1. That has not been tried from Capy yet.
 
 ## If it goes wrong
 
-- **Capy crashes:** a red screen shows where, then the FM-1 restarts. If it crashes twice while starting, it goes
+- **The installer says "FM-1 not found":** the cable may only charge (use one that carries data), the FM-1 may be
+  off, or another program may be using it.
+- **The installer ends with "the FM-1 did not come back":** the firmware was written. Switch the FM-1 off and on.
+  If the computer still doesn't see it, see the Windows point below.
+- **Capy crashes:** a red screen shows where in the program, then the FM-1 restarts. If it crashes twice while starting, it goes
   to the USB rescue by itself.
 - **It won't start:** hold **OCT-** while switching on. That is the USB rescue: no sound, only the updater. Install
-  another build or the stock firmware from there.
+  Capy again, or another firmware, from there.
 - **Windows no longer sees the FM-1 after an install:** it kept its setup for the firmware that was on it before.
   In Device Manager, under "Sound, video and game controllers", uninstall the FM-1's entry (it carries a warning
   sign), then choose Action, Scan for hardware changes.
-- **Not even that:** the chip's own boot ROM can still be reached over USB with a small RP2040 dongle
+- **Not even the rescue starts:** the chip's own boot ROM can still be reached over USB with a small RP2040 dongle
   ([FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter)) or the tools listed under "Firmware update
   and recovery" in [awesome-fm-1](https://github.com/cicloid/awesome-fm-1).
 
@@ -43,16 +60,17 @@ Install it and try it yourself before the FM-1 is wrapped up as a present.
 
 ## The first five minutes
 
-1. Switch it on. It says PIANO and waits. Nothing plays by itself.
+1. Switch it on. It shows the capybaras' pond. Press any key: the pond closes and the screen says PIANO.
 2. Play a key: the screen says its letter. Play C, E and G together: it says C MAJOR.
 3. Turn **PRESETS**: another instrument, with its name in its own colour.
 4. Turn **KNOB 4**: dark to bright. Turn **KNOB 1**: the echo comes on (the FX button lights). Press **FX**: off.
-5. Press **SEQ**: drums play. Press a low key (the ones marked orange on the screen): the bass and the chords join
-   in on that key's chord, and the keys that fit glow. Another low key, another chord. **SEQ** again for the next
-   band; after the fourth it is off.
+5. Press **SEQ**: a metronome clicks. Press **SEQ** again: the first band's drums play. Press a low key (the ones
+   marked orange on the screen): the bass and the chords join in on that key's chord, and the keys that fit glow.
+   Another low key, another chord. Each further press of **SEQ** is the next band; after the fourth it is off.
 6. Press **REC**, play a few notes, press **REC** again: it goes round. Turn **PRESETS** to BASS, press **REC**,
    play along, press **REC**: two layers.
-7. Press **SEL**: the games. **HOME**: back to piano, everything off. The recording is still there: **PLAY**.
+7. Press **SEL**: the games. **HOME**: the pond again; any key, and it is back at the piano with everything off.
+   The recording is still there: **PLAY**.
 
 ## Playing: the details
 
@@ -63,8 +81,8 @@ The tables in the [README](../README.md#playing) are complete. A few details:
   and back; the choice is kept.
 - **The knobs and their buttons.** FX, ENV and LFO each switch one thing on and off; the knob above each
   (KNOB 1, 2, 3) sets how much, and the screen shows them in the same order: ECHO, LENGTH, WOBBLE, then TONE (KNOB 4). Turning a knob switches its thing on, so a knob never does nothing.
-- **The band** never starts by itself and plays quietly under the child's playing. It begins with its drums alone (LULLABY has
-  none: it waits). The lowest octave of keys leads it, F to E: each white key is a chord in C (C, D minor,
+- **The band.** SEQ steps through CLICK (a metronome), then POP, BLUES, WALTZ and LULLABY, then off. A band begins
+  with its drums alone (LULLABY has none: it waits). The lowest octave of keys leads it, F to E: each white key is a chord in C (C, D minor,
   E minor, F, G, A minor; B plays G), kept until another is picked, and the band answers at once. Of several low
   keys held, the lowest leads, so a C chord played down there is C. The keys play their own notes as always. It
   stays in C, so the white keys fit; the glowing keys are the notes of the chord it is on. BLUES walks its bass;
@@ -93,8 +111,8 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 - A wrong answer brings the same question again. Twice wrong and it helps: the right keys light (FIND IT, CHORDS),
   the notes light as they are played again (HIGH LOW), or the tune gets a note shorter (COPY ME).
 - The questions are made up as it goes, so there is no last one.
-- In the games SEQ switches the click on and off (TAP IT's rhythm is heard without it), and DRUMS is left out of
-  the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
+- In the games SEQ switches the click on and off (TAP IT's rhythm is heard without it, and JOIN IN keeps its own
+  drums), and DRUMS is left out of the instruments. REC, PLAY, SAVE, EDIT and ARP say "HOME: BACK TO PLAYING" and do nothing, and OCT- and OCT+ are
   the answer buttons of HIGH LOW; the octave stays in the middle so the letters on the screen match the keys.
 - The tunes: Twinkle Twinkle, Mary Had a Little Lamb, Ode to Joy, Frère Jacques, Row Your Boat, Old MacDonald,
   Jingle Bells, London Bridge, Happy Birthday. All of them are on the white keys.
