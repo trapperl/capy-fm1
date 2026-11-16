@@ -4,17 +4,20 @@ For the grown-up who hands it over. The child needs none of this.
 
 ## Install
 
-1. Get `capy.fwsc`: from this repository's GitHub Actions run (the `capy-fwsc` artifact), or build it
-   (see the [README](../README.md#build-it)).
-2. Connect the FM-1 with a USB **data** cable and switch it on.
-3. Either:
-   - `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before it writes.
-   - Or use a browser installer that takes a `.fwsc` file, such as the
-     [FM-1 Firmware Hub](https://thefirmwarehub.com), in Chrome or Edge.
-4. Don't unplug it while it writes. The FM-1 restarts into Capy.
+1. Download this repository ([ZIP](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip)) and unpack
+   it. The firmware, `capy.fwsc`, and its installer are both in it.
+2. Install [Python 3](https://www.python.org/downloads/), then the two packages the installer needs:
+   `pip install mido python-rtmidi`
+3. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
+4. In the unpacked folder, run `python tools/fm1_install.py capy.fwsc`. It shows which FM-1 it found and asks
+   before it writes. Don't unplug the FM-1 while it writes; after about a minute it restarts into Capy.
 
-**Going back:** install M-VAVE's own V15 package the same way, or with M-VAVE's M-UPGRADE app. Capy answers the
-installers like the other community firmwares.
+This was done from Windows, onto an FM-1 running M-VAVE's own firmware and onto ones running other community
+firmwares. If the installer says the FM-1 did not come back, it has usually restarted under a new name: run
+`python tools/fm1_install.py --info` to see it.
+
+**Going back to M-VAVE's firmware:** [The Firmware Hub](https://thefirmwarehub.com), in Chrome or Edge, has a
+"Back to official V15" button for the FM-1. That has not been tried from Capy yet.
 
 ## If it goes wrong
 
@@ -22,6 +25,9 @@ installers like the other community firmwares.
   to the USB rescue by itself.
 - **It won't start:** hold **OCT-** while switching on. That is the USB rescue: no sound, only the updater. Install
   another build or the stock firmware from there.
+- **Windows no longer sees the FM-1 after an install:** it kept its setup for the firmware that was on it before.
+  In Device Manager, under "Sound, video and game controllers", uninstall the FM-1's entry (it carries a warning
+  sign), then choose Action, Scan for hardware changes.
 - **Not even that:** the chip's own boot ROM can still be reached over USB with a small RP2040 dongle
   ([FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter)) or the tools listed under "Firmware update
   and recovery" in [awesome-fm-1](https://github.com/cicloid/awesome-fm-1).

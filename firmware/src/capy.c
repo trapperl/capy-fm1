@@ -31,7 +31,7 @@
  * Built on Dinghy (zvenson) and its platform (Felucca by Leo Kuroshita, with SLOOP's changes): platform.c and below.
  * Integers only: no float, no 64-bit division (docs/RULES.md). tests/host.c runs this file on a computer. */
 #define APP_NAME "CAPY"
-#define STORE_MAGIC 0x4E455257u                 /* never another firmware's data ("WREN", its first name: kept, so what she saved stays) */
+#define STORE_MAGIC 0x4E455257u                 /* never another firmware's data (unchanged since the first builds, so what was saved still loads) */
 static void app_idle(void);
 #define LCD_IDLE app_idle                       /* while the screen's DMA runs: the clock and MIDI */
 #include "platform.c"

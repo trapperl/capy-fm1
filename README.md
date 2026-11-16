@@ -34,19 +34,18 @@ three levels gained in the games, another baby moves into the pond, up to five.
 
 ## Install
 
-Installing firmware is at your own risk. Capy has been tried on one FM-1 so far. Read
-[If it goes wrong](docs/MANUAL.md#if-it-goes-wrong) before you start.
+Installing firmware is at your own risk. Capy has been tried on one FM-1 so far, installed from Windows.
 
-1. Get `capy.fwsc` from the newest run under [Actions](https://github.com/trapperl/capy-fm1/actions) (the
-   `capy-fwsc` artifact; GitHub asks you to sign in for that), or [build it](#build-it).
-2. Connect the FM-1 with a USB **data** cable and switch it on.
-3. Install it: `pip3 install mido python-rtmidi`, then `python3 tools/fm1_install.py capy.fwsc`. It asks before
-   it writes. A browser installer that takes a `.fwsc` file, such as the
-   [FM-1 Firmware Hub](https://thefirmwarehub.com) in Chrome or Edge, works too.
-4. Don't unplug it while it writes. The FM-1 restarts into Capy.
+1. Download this repository ([ZIP](https://github.com/trapperl/capy-fm1/archive/refs/heads/main.zip)) and unpack
+   it. The firmware, `capy.fwsc`, and its installer are both in it.
+2. Install [Python 3](https://www.python.org/downloads/), then the two packages the installer needs:
+   `pip install mido python-rtmidi`
+3. Connect the FM-1 to the computer with a USB **data** cable and switch it on.
+4. In the unpacked folder, run `python tools/fm1_install.py capy.fwsc`. It shows which FM-1 it found and asks
+   before it writes. Don't unplug the FM-1 while it writes; after about a minute it restarts into Capy.
 
-To go back, install M-VAVE's own V15 package the same way. The [manual](docs/MANUAL.md) has the details, what to
-check before you hand it over, and a first five minutes with it.
+The [manual](docs/MANUAL.md) covers what to do [if it goes wrong](docs/MANUAL.md#if-it-goes-wrong), how to go
+back to M-VAVE's firmware, and what to set before handing the FM-1 to a child.
 
 ## Playing
 
@@ -113,8 +112,7 @@ git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
 python3 tools/fm1_install.py build/capy.fwsc      # over USB; asks before it writes
 ```
 
-**Or let GitHub build it.** Every push to `main` runs `.github/workflows/release.yml` and keeps `capy.fwsc` as a
-build artifact.
+The `capy.fwsc` in this repository is the package built from the code beside it.
 
 ## Licence
 
