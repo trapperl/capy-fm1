@@ -431,10 +431,12 @@ enum { S_LIVE, S_LOOP, S_BAND, S_CUE };         /* who plays a voice: the keys, 
 static const char *const DRUM_NAME[12] = {"KICK", "STICKS", "SNARE", "STICKS", "CLAP", "LOW TOM", "STICKS", "HIGH TOM",
                                           "STICKS", "HAT", "STICKS", "CYMBAL"};
 static uint8_t drum_pc;                         /* the last drum or animal played, for the screen */
+static uint32_t perc_ms;                        /* when a drum or an animal last sounded (they are no voices: quiet() does not see them) */
 static uint32_t drum_n, drum_ms;
 static void drum_hit(uint32_t note, uint32_t src)
 {
     uint32_t pc = note % 12u;
+    perc_ms = fm1_ms;
     switch (pc) {
     case 0: k_trig++; break;
     case 2: s_trig++; break;
@@ -453,6 +455,7 @@ static void animal_hit(uint32_t note, uint32_t src)   /* every octave the same t
 {
     static uint32_t next;
     uint32_t pc = note % 12u;
+    perc_ms = fm1_ms;
     animal[next].kind = (uint8_t)pc;
     animal[next].trig++;
     next = (next + 1u) % NA;
@@ -707,7 +710,7 @@ static void rec_close(void)                     /* the notes still held get thei
         for (i = 0; i < open_n; i++) stop(open_note[i] & 255u, open_note[i] >> 8, S_LIVE);   /* (the recording takes over) */
         loop_start(band ? rec_t0 + L.len : tick);
     } else if (rec == R_DUB) {
-        uint32_t pos = tick - loop_t0, added = 0;
+        uint32_t pos = (int32_t)(tick - loop_t0) < 0 ? 0u : tick - loop_t0, added = 0;   /* (before the loop has begun: at its start, as rec_note) */
         if (pos >= L.len) pos = L.len - 1u;
         for (i = 0; i < open_n; i++)
             if (!ev_insert(loop_ptr, pos, open_note[i] & 255u, open_note[i] >> 8, 0)) loop_ptr++;
@@ -724,6 +727,11 @@ static void rec_note(uint32_t note, uint32_t pi, uint32_t on)   /* every live no
         L.n = 0; L.len = 0; L.layers = 1; open_n = 0;
         rec_t0 = band ? band_origin + (tick - band_origin + 240u) / 480u * 480u : tick;   /* the nearest beat */
         rec = R_FIRST;
+    }
+    if (rec != R_IDLE && rec != R_ARMED && on && L.n + open_n + 2u > NEV) {   /* (room is kept for the note-off of every note held) */
+        rec_close();
+        say("FULL");
+        return;
     }
     if (rec == R_FIRST) {
         int32_t t = (int32_t)(tick - rec_t0);
@@ -964,6 +972,7 @@ static void tune_band(char c)                   /* she played the tune's next no
 {
     static const int8_t CH[7] = {5, -1, 0, 1, 2, 3, 4};   /* A C D E F G -> BCH */
     uint32_t r, i, t[3];
+    perc_ms = fm1_ms;
     if (c < 'A' || c > 'G' || CH[c - 'A'] < 0) { h_kit = 0; h_trig++; return; }   /* in between: the hat */
     band_quiet();
     r = BCH[CH[c - 'A']].pc;
@@ -1031,7 +1040,7 @@ static void game_new(void)                      /* the next question */
         q_pc = pc;
         q_hi = minor;
         q_mask = 1u << pc | 1u << (pc + (minor ? 3u : 4u)) % 12u | 1u << (pc + 7u) % 12u;
-        chord_seen = 0;
+        chord_seen = fm1_in.notes & 0x7FFFFFFu;     /* (the last chord, still held, is no wrong try at this one) */
         break;
     }
     case G_ALONG: {                             /* a short tune over the beat: a bar to listen, a bar to play it */
@@ -1284,7 +1293,7 @@ static void game_run(uint32_t keys)             /* every pass of the main loop *
         } else if (g_phase == P_WAIT && pos >= 2u * bar + PPQ / 2u) {   /* her bar is over, and a little more */
             say("ONCE MORE");
             if (g_miss < 9u) g_miss++;
-            al_t0 += 2u * bar;
+            al_t0 += 3u * bar;                  /* (the next bar line: its tune starts on the one again) */
             al_i = 0;
             hint_mask = 0;
             g_phase = P_CUE;
@@ -1739,6 +1748,7 @@ static const int16_t SPOT[5][2] = {{128, 104}, {96, 170}, {182, 110}, {150, 184}
 #define C_LEAF RGB(70, 190, 70)
 enum { SC_CALM, SC_SPLASH, SC_RIDE, SC_WREN, SC_NAP, SC_BATH, NSCENE };
 static const uint16_t SC_MS[NSCENE] = {5000, 9000, 8000, 8000, 8000, 9000};
+#define BATH_SINK 7400                          /* the bath: its yuzus begin to go under (the last is gone as the scene ends) */
 
 static int32_t ramp(int32_t a, int32_t b, int32_t t, int32_t t0, int32_t t1)   /* a until t0, b from t1, a line between */
 {
@@ -1795,7 +1805,7 @@ static void note_at(int32_t x, int32_t y)       /* a little note, as she sings *
 static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* the picture at t of scene sc, into the canvas */
 {
     static uint8_t pw[61];                      /* the pond's half width, row by row */
-    static const int16_t BX[5] = {40, 84, 150, 190, 118}, BY[5] = {192, 206, 204, 190, 214};   /* the bath's yuzus */
+    static const int16_t BX[5] = {24, 100, 134, 206, 117}, BY[5] = {193, 198, 198, 194, 202};   /* the bath's yuzus (clear of the one that drifts) */
     uint32_t f = now / 300u, i, mf = CAPY_YUZU | (f % 7u == 4u ? CAPY_BLINK : 0u), bf = f % 6u == 3u ? CAPY_BLINK : 0u;
     int32_t dy, k, bx = SPOT[0][0], by = SPOT[0][1], my = 62, wet = 0;
     int32_t px = 0, py = 0, bird = 0, wing = 0, pflip = 0;
@@ -1809,7 +1819,7 @@ static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* th
     for (dy = -30; dy <= 30; dy++)              /* the pond, its ripples drifting */
         cv_rect(120 - pw[dy + 30], 196 + dy, 2 * pw[dy + 30], 1,
                 dy == -30 || ((uint32_t)(dy + 30) + 11u - now / 500u % 11u) % 11u == 0u ? C_RIPPLE : C_WATER);
-    if (sc != SC_BATH) yuzu_at(116 + wave(now, 9000, 60), 212 + wave(now, 1300, 1));   /* a yuzu drifts in the water */
+    yuzu_at(116 + wave(now, 9000, 60), 212 + wave(now, 1300, 1));   /* a yuzu drifts in the water, in every scene */
 
     switch (sc) {
     case SC_SPLASH:                             /* she runs to the pond, jumps in, swims, climbs out and shakes */
@@ -1923,6 +1933,13 @@ static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* th
         for (k = 0; k < 5; k++) {
             int32_t u = t - 600 - k * 1300;
             if (u < 0) continue;
+            int32_t s = t - BATH_SINK - k * 300;    /* at the end they go under, one after the other: none just vanishes */
+            if (s >= 400) continue;
+            if (s > 0) {                            /* going under: less and less of it above the water */
+                cv_rect(BX[k], BY[k] + s * 8 / 400, 8, 8 - s * 8 / 400, C_YUZU);
+                cv_rect(BX[k] - 3, BY[k] + 8, 14, 1, C_RIPPLE);
+                continue;
+            }
             yuzu_at(BX[k], u < 500 ? ramp(POND_Y, BY[k], u, 0, 500) : BY[k] + wave(now + (uint32_t)k * 400u, 1300, 1));
             drops(BX[k] + 4, BY[k], u, 500, 4, 26, 12);
         }
@@ -2086,6 +2103,15 @@ static void wait_quiet(void)                    /* a flash erase stalls the soun
     while (!quiet() && fm1_ms - t0 < 1500u) platform_poll();
 }
 
+/* after a wait (a save): the keys let go meanwhile get their note-off, the ones pressed meanwhile stay silent */
+static void keys_sync(uint32_t *prev, uint8_t *held, const uint8_t *held_note, const uint8_t *held_pi)
+{
+    uint32_t now = fm1_in.notes & 0x7FFFFFFu, k;
+    for (k = 0; k < 27u; k++)
+        if ((*prev & ~now) >> k & 1u && held[k]) { held[k] = 0; live_off(held_note[k], held_pi[k], 1); }
+    *prev = now;
+}
+
 static void app_main(void)
 {
     uint32_t prev = 0, k, hash, keys_drawn = ~0u, name_drawn = ~0u, knobs_drawn = ~0u, status_drawn = ~0u;
@@ -2119,6 +2145,9 @@ static void app_main(void)
         platform_poll();
         clock_run();
 
+#ifdef CAPY_LOOP_HOOK
+        CAPY_LOOP_HOOK();                       /* (tests/bot.c: a player that knows the answers) */
+#endif
         /* ---- the keys */
         keys = fm1_in.notes & 0x7FFFFFFu;
         down = keys & ~prev;
@@ -2248,10 +2277,11 @@ static void app_main(void)
                 song_dirty = 0;
                 { char t[24]; sput(nput(sput(t, "SONG "), set.slot + 1u), L.len ? " SAVED" : " SAVED (EMPTY)"); say(t); }
                 status_drawn = ~0u;
-                prev = fm1_in.notes & 0x7FFFFFFu;
+                keys_sync(&prev, held, held_note, held_pi);
                 tick_ms = fm1_ms;
             }
         }
+        if (place && b & 1u << BTN_EDIT) edit_done = 1;   /* (pressed in a game: not the start of a hold that erases, should she go back holding it) */
         if (b & 1u << BTN_HOME) { home_t = fm1_ms; home_done = 0; }
         if (fm1_in.buttons & 1u << BTN_HOME && !home_done && fm1_ms - home_t > 3000u) {
             home_done = 1;                      /* for the grown-ups: half the loudness */
@@ -2297,6 +2327,7 @@ static void app_main(void)
             if (place && cur_patch >= PI_DRUMS) cur_patch = e > 0 ? 0 : PI_DRUMS - 1u;   /* (the games ask for notes: no drums or animals there) */
             if (place) say(PATCH[cur_patch].name);
             knobs_drawn = keys_drawn = panel_drawn = ~0u;
+            was_held = 0;                       /* (the greyed name of what was last held belongs to the instrument before) */
         }
         if ((e = fm1_enc_take(ENC_ALGORITHM)) != 0) {
             int32_t v = (int32_t)bpm + 4 * e;
@@ -2326,7 +2357,7 @@ static void app_main(void)
             sput(nput(sput(t, "SONG "), set.slot + 1u), L.len ? "" : ": EMPTY");
             say(t);
             status_drawn = ~0u;
-            prev = fm1_in.notes & 0x7FFFFFFu;
+            keys_sync(&prev, held, held_note, held_pi);
             tick_ms = fm1_ms;
         }
         if ((e = fm1_enc_take(ENC_KNOB4)) != 0) { int32_t v = g_tone + e; g_tone = (uint8_t)(v < 0 ? 0 : v > 16 ? 16 : v); }
@@ -2440,7 +2471,7 @@ static void app_main(void)
         if (hash != knobs_drawn) { knobs_drawn = hash; draw_knobs(); }
         idle_ok = 0;
 
-        if (set_dirty && quiet() && !playing && !band && (!place || g_phase == P_WAIT)) {   /* settings: saved when nothing sounds */
+        if (set_dirty && quiet() && fm1_ms - perc_ms > 1500u && !playing && !band && (!place || g_phase == P_WAIT)) {   /* settings: saved when nothing sounds */
             settings_save(&set, sizeof set);
             set_dirty = 0;
             tick_ms = fm1_ms;

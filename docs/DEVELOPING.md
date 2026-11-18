@@ -40,3 +40,13 @@ each `capy-<milliseconds>.png` is the screen at a moment the script asked for on
 A script is plain text with one event on a line: the time in milliseconds, then what happens. For example
 `900 keys 0x80` holds middle C from 900 ms on, `1200 keys 0` lets go, and `1500 shot` saves the screen. The
 scripts are in [tests/scripts](../tests/scripts); `tour.txt` begins with the numbers of the buttons and knobs.
+
+A second tool checks the games themselves:
+
+```sh
+tests/run_bot.sh
+```
+
+It plays every game with a player that knows the answers ([tests/bot.c](../tests/bot.c)) and fails if a game does
+not reach its top level or stops asking. Then it runs eight sessions of random keys, buttons and knobs
+([tests/stress.py](../tests/stress.py)) and fails if one crashes. Run it after changing a game.
