@@ -103,8 +103,8 @@ The tables in the [README](../README.md#playing) are complete. A few details:
 - **The nap.** When nothing has been touched and nothing has sounded for two minutes, the pond comes back with the
   capybara asleep (ZZZ). Any key, button or knob wakes it, and the instrument, the knobs and the song are as they
   were. It does not happen in the games, with the click or a band on, or while a recording plays.
-- **The pond.** HOME and switching on show the capybaras' pond until a key is played, a button pressed or a knob turned; the
-  buttons OCT- and OCT+ don't close it, they step back and forth through its six scenes (calm, the jump into the
+- **The pond.** HOME and switching on show the capybaras' pond until a key is played, a button pressed or a knob turned; HOME
+  itself doesn't close it, and the buttons OCT- and OCT+ don't either: they step back and forth through its six scenes (calm, the jump into the
   water, the ride on her mother's back, the wren, the nap, the yuzu bath), which also follow each other by
   themselves; each visit starts with the next one. The other babies blink, and the ones in the water bob. There is one
   baby to begin with; every three levels gained, over all the games together, another one moves in, up to five.

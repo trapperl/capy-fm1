@@ -233,7 +233,7 @@ static void app_audio(int32_t *out, uint32_t n)
 {
     static int32_t mono[256];
     static uint32_t lfo_ph, ew, k_seen, s_seen, h_seen, k_ph, k_sw, s_ph, rnd = 1;
-    static int32_t k_amp, s_amp, h_amp, h_prev, c_amp, t_amp, y_amp, p_amp;
+    static int32_t k_click, k_amp, s_amp, h_amp, h_prev, c_amp, t_amp, y_amp, p_amp;
     static uint32_t c_seen, c_ph, c_inc, t_seen, t_ph, t_inc, t_sw, y_seen, p_seen;
     uint32_t sb, v, i, elen = g_echo_len, tone = g_tone;
     int32_t loff = g_len_on ? ((int32_t)g_len - 8) / 2 : 0, wet = g_echo_on ? (int32_t)g_echo * 1400 : 0;
@@ -334,11 +334,11 @@ static void app_audio(int32_t *out, uint32_t n)
     }
 
     /* the drums: a kick (a sine falling from 180 to 50 Hz), a snare (noise and a tone), a hat (bright noise) */
-    if (k_trig != k_seen) { k_seen = k_trig; k_amp = 30000; k_sw = 12660000u; k_ph = 0; }
+    if (k_trig != k_seen) { k_seen = k_trig; k_amp = 22000; k_sw = 24000000u; k_ph = 0; k_click = 14000; }
     if (s_trig != s_seen) { s_seen = s_trig; s_amp = 22000; }
     if (h_trig != h_seen) { h_seen = h_trig; h_amp = h_kit ? 20000 : 9000; }   /* (in the band the hat stays behind) */
     if (c_trig != c_seen) { c_seen = c_trig; c_amp = 15000; c_ph = 0; c_inc = c_one ? 171409500u : 114435400u; }   /* A6, D6 */
-    if (t_trig != t_seen) { t_seen = t_trig; t_amp = 26000; t_ph = 0; t_inc = t_hi ? 13634810u : 8765235u; t_sw = t_inc + (t_inc >> 1); }   /* 140, 90 Hz */
+    if (t_trig != t_seen) { t_seen = t_trig; t_amp = 20000; t_ph = 0; t_inc = t_hi ? 21426000u : 14316000u; t_sw = t_inc >> 1; }   /* 220, 147 Hz: a fifth apart, well above the kick */
     if (y_trig != y_seen) { y_seen = y_trig; y_amp = 18000; }
     if (p_trig != p_seen) { p_seen = p_trig; p_amp = 30000; }
     if (k_amp > 16 || s_amp > 16 || h_amp > 16 || c_amp > 16 || t_amp > 16 || y_amp > 16 || p_amp > 16)
@@ -347,10 +347,12 @@ static void app_audio(int32_t *out, uint32_t n)
             rnd = rnd * 1664525u + 1013904223u;
             nz = (int32_t)rnd >> 17;            /* +-16383 */
             if (k_amp > 16) {
-                k_ph += 4869546u + k_sw;
-                k_sw -= k_sw >> 9;
-                x += (sine(k_ph) * k_amp) >> 16;
-                k_amp -= (k_amp >> 12) + 1;
+                k_ph += 6330000u + k_sw;        /* 65 Hz, falling to it from 310 */
+                k_sw -= k_sw >> 10;
+                x += ((sine(k_ph) + (sine(2u * k_ph) >> 1) + (sine(3u * k_ph) >> 2)) * k_amp) >> 16;   /* (with its octave and twelfth: a small speaker has no 65 Hz) */
+                x += (nz * k_click) >> 15;      /* the beater: a tick of noise */
+                k_click -= k_click >> 6;
+                k_amp -= (k_amp >> 11) + 1;     /* short: a thud, where the toms ring */
             }
             if (s_amp > 16) {
                 s_ph += 18017000u;
@@ -364,8 +366,8 @@ static void app_audio(int32_t *out, uint32_t n)
             if (t_amp > 16) {                   /* a tom: a sine falling to its note */
                 t_ph += t_inc + t_sw;
                 t_sw -= t_sw >> 10;
-                x += (sine(t_ph) * t_amp) >> 16;
-                t_amp -= (t_amp >> 12) + 1;
+                x += ((sine(t_ph) + (sine(2u * t_ph) >> 1)) * t_amp) >> 16;   /* (and its octave, for a small speaker) */
+                t_amp -= (t_amp >> 13) + 1;     /* (they ring on) */
             }
             if (y_amp > 16) {                   /* the cymbal: the hat's noise, ringing on */
                 x += ((nz - h_prev) * y_amp) >> 16;
@@ -1949,10 +1951,11 @@ static const uint8_t POND_ENC[4] = {ENC_KNOB1, ENC_KNOB2, ENC_KNOB3, ENC_KNOB4};
 static int32_t pond_presets;                    /* PRESETS turned at the pond: it leaves, and the turn still counts */
 static uint32_t pond_b, pond_rel;               /* the button that closed it: the main loop still gets it (not OCT- / OCT+) */
 static int8_t pond_want = -1;                   /* the scene the next visit begins with (the nap) */
-static void pond_show(const char *title)        /* the pond, until a key, a knob or a button other than OCT- / OCT+ */
+static void pond_show(const char *title)        /* the pond, until a key, a knob or a button other than OCT- / OCT+ / HOME */
 {
     static uint8_t scene, been;                 /* each visit begins with the next scene */
-    const uint32_t octs = 1u << BTN_OCT_DOWN | 1u << BTN_OCT_UP;
+    const uint32_t octs = 1u << BTN_OCT_DOWN | 1u << BTN_OCT_UP, stay = octs | 1u << BTN_HOME;   /* (HOME: she is home already) */
+    uint32_t home_at = 0, home_did = 0;
     uint32_t start = fm1_ms, t0 = fm1_ms, drawn = 0, n = babies(), was = fm1_in.buttons & octs, i, rel;
     if (pond_want >= 0) scene = (uint8_t)pond_want, pond_want = -1;
     else if (been) scene = (uint8_t)((scene + 1u) % NSCENE);
@@ -1962,10 +1965,21 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
     if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, APP_NAME " " APP_VER, C_GREY, 1);   /* (hello: which build this is) */
     for (i = 0; i < 4u; i++) (void)fm1_enc_take(POND_ENC[i]);   /* (turns from before the pond don't close it) */
     (void)fm1_enc_take(ENC_PRESETS); (void)fm1_enc_take(ENC_SELECT); (void)fm1_enc_take(ENC_ALGORITHM);
-    while (!fm1_in.notes && !(fm1_in.buttons & ~octs)) {
+    while (!fm1_in.notes && !(fm1_in.buttons & ~stay)) {
         uint32_t o = fm1_in.buttons & octs, strip;
         int32_t turned = 0, e;
         platform_poll();
+        if (!(fm1_in.buttons & 1u << BTN_HOME)) {
+            if (home_did) draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
+            home_at = home_did = 0;
+        } else if (!home_at) home_at = fm1_ms | 1u;
+        else if (!home_did && fm1_ms - home_at > 3000u) {       /* held 3 s, here as anywhere: half the loudness */
+            home_did = 1;
+            g_quiet = !g_quiet;
+            set.quiet = g_quiet;
+            set_dirty = 1;
+            draw_text_box(0, 8, 240, &FONT_L, g_quiet ? "QUIET ON" : "QUIET OFF", C_YUZU, 1);
+        }
         if ((e = fm1_enc_take(ENC_PRESETS)) != 0) pond_presets += e, turned = 1;
         for (i = 0; i < 4u; i++)
             if (fm1_enc_take(POND_ENC[i])) turned = 1;
@@ -1989,8 +2003,8 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
             platform_poll();
         }
     }
-    pond_b = fm1_input_edges(&rel) & ~octs;     /* (the OCT presses were the pond's) */
-    pond_rel = rel & ~octs;
+    pond_b = fm1_input_edges(&rel) & ~stay;     /* (the OCT and HOME presses were the pond's) */
+    pond_rel = rel & ~stay;
 }
 
 static void draw_knobs(void)                    /* the four knobs: their names, how far, lit when on */
