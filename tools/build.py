@@ -62,6 +62,7 @@ DATA_FAMILY = "CAPY"              # the SMK store's owner tag (store.h): 1..7 of
 SCREEN_NAME = "CAPY"              # the update loader's screen (FM-1, ldr_screen.c): the name and its colour (RGB565)
 SCREEN_COLOUR = 0x7FEA              # green, #78FF50
 PRODUCT = "FM-1_960"                # Dinghy: 99N (OUR_LOADER in the installer wants FM-1_9NN). Your fork: pick your own
+THEME_DEFS = []                     # --theme dino: -DDINO=1 (capy.c)
 VERSION = None                      # APP_VER for release builds
 
 
@@ -172,6 +173,7 @@ def build_app():
         if not re.fullmatch(r"[A-Z0-9]{1,7}", DATA_FAMILY):
             raise SystemExit("DATA_FAMILY: 1..7 of A-Z 0-9")
         flags.append(f'-DDATA_FAMILY="{DATA_FAMILY}"')
+    flags += THEME_DEFS
     flags += os.environ.get("DINGHY_DEFS", "").split()   # (a test build: DINGHY_DEFS=-DFELUCCA_UAC=0 ./build.sh)
     cmds = [("cc", "-c", FW / "crt0.S", "-o", OUT / "crt0.o"),
             ("cc", "-c", FW / "hal" / "fm1_vec.S", "-o", OUT / "fm1_vec.o"),
@@ -296,13 +298,15 @@ def mmio_check():
 
 
 def main():
-    global PRODUCT, VERSION, BOARD, APP_SLOT
+    global PRODUCT, VERSION, BOARD, APP_SLOT, SCREEN_NAME, THEME_DEFS
     ap = argparse.ArgumentParser()
     ap.add_argument("--release", metavar="X.Y", help="release build: identity FM-1_99Y, version string X.Y")
     ap.add_argument("--board", choices=sorted(BOARD_PREFIX), default=None,
                     help="target board: fm1 (default) or smk37 (default: $BOARD, else fm1)")
     ap.add_argument("--model", choices=sorted(MODELS), default=None,
                     help="smk37: the model name, pro (default), elite or mke (default: $MODEL, else pro)")
+    ap.add_argument("--theme", choices=["capy", "dino"], default=None,
+                    help="capy (default) or dino: the same firmware with dinosaurs, as dino*.fwsc (default: $THEME, else capy)")
     ap.add_argument("--sdk", type=Path, help="JieLi AC79 SDK checkout (default: $AC79_SDK)")
     a = ap.parse_args()
     BOARD = (a.board or os.environ.get("BOARD") or "fm1").lower().replace("-", "")
@@ -319,14 +323,20 @@ def main():
         BOARD_PREFIX[BOARD] = BOARD_PREFIX[BOARD].replace(MODELS["pro"], MODELS[model])
         suffix += "-" + model
     PRODUCT = BOARD_PREFIX[BOARD] + "0"
-    name = f"capy{suffix}.fwsc"
+    theme = (a.theme or os.environ.get("THEME") or "capy").lower()
+    if theme not in ("capy", "dino"):
+        raise SystemExit(f"THEME={theme}: use capy or dino")
+    if theme == "dino":
+        SCREEN_NAME = "DINO"
+        THEME_DEFS = ["-DDINO=1"]
+    name = f"{theme}{suffix}.fwsc"
     if a.release:                   # one digit each: the identity has room for two (X.Y; a .Z only in the text)
         m = re.fullmatch(r"(\d)\.(\d)(\.\d)?(-[A-Za-z0-9]+)?", a.release)
         if not m:
             raise SystemExit(f"--release {a.release}: use X.Y, X.Y.Z or X.Y-suffix, one digit each")
         PRODUCT = BOARD_PREFIX[BOARD] + m[2]
         VERSION = m[1] + "." + m[2] + (m[3] or "")
-        name = f"capy-{a.release}{suffix}.fwsc"
+        name = f"{theme}-{a.release}{suffix}.fwsc"
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK
         if hashlib.sha256(fm1pkg_make.sdk_file(rel)).hexdigest() != sha:

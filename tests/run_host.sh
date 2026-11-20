@@ -3,11 +3,13 @@
 # Run firmware/src/capy.c on this computer (tests/host.c): build/host/capy.wav and the screens as PNG.
 #   tests/run_host.sh [script]               your own script (tests/host.c says what a line can do)
 #   BOARD=smk37 tests/run_host.sh [script]   the SMK-37 build (velocity, pads, faders, wheels, outer keys)
+#   THEME=dino tests/run_host.sh [script]    the dinosaurs (build/host/dino.wav, dino-*.png)
 set -e
 cd "$(dirname "$0")/.."
 mkdir -p build/host
 N=capy; D=
 if [ "${BOARD:-fm1}" = smk37 ]; then N=capy-smk37; D=-DBOARD_SMK37=1; fi
+if [ "${THEME:-capy}" = dino ]; then N=dino${N#capy}; D="$D -DDINO=1"; fi
 cc -O2 -Wall -Wno-unused-function -DDINGHY_HOST $D -DAPP_VER="\"${APP_VER:-dev}\"" -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/$N firmware/src/capy.c
 build/host/$N build/host/$N ${1:+"$1"}
 python3 - "$N" <<'PY'

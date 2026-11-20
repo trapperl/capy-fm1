@@ -31,7 +31,14 @@
  *
  * Built on Dinghy (zvenson) and its platform (Felucca by Leo Kuroshita, with SLOOP's changes): platform.c and below.
  * Integers only: no float, no 64-bit division (docs/RULES.md). tests/host.c runs this file on a computer. */
+/* -DDINO=1: the same instrument and the same games with dinosaurs (./build.sh --theme dino). Only what is drawn and
+ * what the twelve calls are differs: a diplodocus for the capybara, twelve dinosaurs for the animals, a berry for
+ * the yuzu, a pterosaur for the wren, a volcano behind the pond. What was saved loads in either. */
+#ifdef DINO
+#define APP_NAME "DINO"
+#else
 #define APP_NAME "CAPY"
+#endif
 #define STORE_MAGIC 0x4E455257u                 /* never another firmware's data (unchanged since the first builds, so what was saved still loads) */
 static void app_idle(void);
 #define LCD_IDLE app_idle                       /* while the screen's DMA runs: the clock and MIDI */
@@ -74,7 +81,11 @@ static const patch_t PATCH[NPATCH] = {
     {"BRASS",   RGB(255, 215, 0),     0,  256,  1040, 0,   0,  101450,  6,   24000, 3,   200, 1,  0,  7000},
     {"FLUTE",   RGB(130, 255, 170),   12, 256,  200,  200, 0,  202899,  0,   32767, 3,   0,   0,  3,  9000},
     {"DRUMS",   RGB(255, 90, 60),     0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
+#ifdef DINO
+    {"DINOS",   RGB(150, 230, 90),    0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
+#else
     {"ANIMALS", RGB(150, 230, 90),    0,  256,  0,    0,   0,  3043486, 0,   0,     0,   0,   0,  0,  0},
+#endif
 };
 
 /* exp(-1 / (tau * 1378.125)) in Q20, tau = 0.03 0.05 0.08 0.12 0.2 0.3 0.5 0.8 1.2 2 3 4.5 7 10 15 22 s */
@@ -145,6 +156,95 @@ static int animal_at(uint32_t kind, int32_t ms, acall_t *c)   /* the call at ms;
     int32_t e = 0, k, f, w, peak = 0;
     c->f = 440; c->amp = 0; c->idx = 0; c->ratio_q8 = 256; c->fb = 0; c->nz = 0;
     switch (kind) {
+#ifdef DINO                                     /* (nobody has heard one: each is given a voice of its own) */
+    case 0:                                     /* C, the T rex: a long roar, rough, rising and then falling */
+        if (ms >= 1300) return 0;
+        e = syl(ms, 0, 1300, 90, 500);
+        if (ms % 26 >= 13) e = (e * 150) >> 8;
+        f = ms < 220 ? lin(ms, 0, 220, 150, 240) : lin(ms, 220, 1300, 240, 115);
+        c->f = 2 * f; c->ratio_q8 = 128; c->fb = 300; c->nz = 5000; peak = 15000;
+        c->idx = ms < 300 ? lin(ms, 0, 300, 600, 1500) : lin(ms, 300, 1300, 1500, 700);
+        break;
+    case 1:                                     /* C#, the raptor: three quick screeches */
+        if (ms >= 620) return 0;
+        e = syl(ms, 0, 150, 5, 30) + syl(ms, 200, 350, 5, 30) + syl(ms, 400, 620, 5, 80);
+        if (ms % 14 >= 7) e = (e * 130) >> 8;
+        k = ms % 200;
+        c->f = k < 60 ? lin(k, 0, 60, 1300, 2100) : lin(k, 60, 200, 2100, 1600);
+        c->ratio_q8 = 128; c->idx = 800; c->fb = 200; peak = 9000;
+        break;
+    case 2:                                     /* D, the triceratops: two bellows through the nose */
+        if (ms >= 1000) return 0;
+        e = syl(ms, 0, 380, 30, 120) + syl(ms, 480, 1000, 30, 220);
+        k = ms < 480 ? ms : ms - 480;
+        f = k < 120 ? lin(k, 0, 120, 170, 260) : lin(k, 120, 500, 260, 200);
+        c->f = 3 * f; c->ratio_q8 = 85; c->idx = 900; c->fb = 200; c->nz = 1200; peak = 13000;
+        break;
+    case 3:                                     /* D#, the pteranodon: a cry from high up, falling */
+        if (ms >= 700) return 0;
+        e = syl(ms, 0, 700, 10, 250);
+        if (ms % 20 >= 14) e = (e * 190) >> 8;
+        c->f = ms < 80 ? lin(ms, 0, 80, 2400, 3200) : lin(ms, 80, 700, 3200, 1500);
+        c->idx = 350; c->fb = 150; peak = 8000;
+        break;
+    case 4:                                     /* E, the stegosaurus: a slow groan, sinking */
+        if (ms >= 1100) return 0;
+        w = sine((uint32_t)ms * 5u * 4294967u);
+        e = syl(ms, 0, 1100, 150, 350);
+        f = lin(ms, 0, 1100, 270, 160) + ((w * 10) >> 15);
+        c->f = 2 * f; c->ratio_q8 = 128; peak = 14000;
+        c->idx = lin(ms, 0, 1100, 350, 1000);
+        break;
+    case 5:                                     /* F, the ankylosaur: its tail club, "bonk, bonk-bonk" */
+        if (ms >= 650) return 0;
+        e = syl(ms, 0, 160, 3, 120) + syl(ms, 300, 440, 3, 110) + syl(ms, 470, 650, 3, 150);
+        k = ms < 300 ? ms : ms < 470 ? ms - 300 : ms - 470;
+        c->f = lin(k, 0, 90, 420, 190); c->idx = 250; peak = 16000;
+        if (k < 12) c->nz = 5000;
+        break;
+    case 6:                                     /* F#, the spinosaurus: a hiss, then a growl from deep down */
+        if (ms >= 1000) return 0;
+        e = syl(ms, 0, 1000, 60, 350);
+        if (ms >= 400 && ms % 40 >= 20) e = (e * 150) >> 8;
+        c->nz = lin(ms, 250, 500, 15000, 2500);
+        c->f = 2 * lin(ms, 400, 1000, 190, 130); c->ratio_q8 = 128; c->fb = 350; peak = 12000;
+        c->idx = lin(ms, 250, 500, 0, 1400);
+        if (ms < 400) e = (e * lin(ms, 250, 400, 110, 256)) >> 8;
+        break;
+    case 7:                                     /* G, the iguanodon: "honk honk", a horn */
+        if (ms >= 620) return 0;
+        e = syl(ms, 0, 240, 15, 60) + syl(ms, 330, 620, 15, 90);
+        k = ms < 330 ? ms : ms - 330;
+        c->f = lin(k, 0, 40, 330, 392) - lin(k, 150, 290, 0, 30); c->idx = 520; c->fb = 180; peak = 12000;
+        break;
+    case 8:                                     /* G#, the gallimimus: four quick hoots, running up */
+        if (ms >= 520) return 0;
+        e = syl(ms, 0, 80, 6, 30) + syl(ms, 130, 210, 6, 30) + syl(ms, 260, 340, 6, 30) + syl(ms, 390, 520, 6, 60);
+        c->f = 700 + ms / 130 * 110 + lin(ms % 130, 0, 80, 0, 120);
+        c->idx = 150; peak = 9000;
+        break;
+    case 9:                                     /* A, the baby in its egg: the shell cracks, and "peep, peep" */
+        if (ms >= 560) return 0;
+        e = syl(ms, 0, 25, 2, 10) + syl(ms, 140, 300, 8, 50) + syl(ms, 360, 560, 8, 80);
+        if (ms < 25) { c->nz = 16000; c->f = 2500; peak = 5000; break; }
+        k = ms < 360 ? ms - 140 : ms - 360;
+        c->f = lin(k, 0, 120, 1500, 2500); c->idx = 90; peak = 7500;
+        break;
+    case 10:                                    /* A#, the troodon: two purring trills */
+        if (ms >= 640) return 0;
+        e = syl(ms, 0, 260, 10, 30) + syl(ms, 360, 640, 10, 60);
+        if (ms % 36 >= 18) e = (e * 60) >> 8;
+        c->f = ms < 360 ? lin(ms, 0, 260, 1000, 1150) : lin(ms, 360, 640, 1150, 950);
+        c->idx = 220; peak = 9000;
+        break;
+    default:                                    /* B, the diplodocus: a long, round call, a step up in the middle */
+        if (ms >= 1300) return 0;
+        e = syl(ms, 0, 1300, 140, 400);
+        f = ms < 550 ? lin(ms, 0, 200, 185, 196) : lin(ms, 550, 700, 196, 262);
+        c->f = 2 * f; c->ratio_q8 = 128; c->fb = 80; peak = 15000;
+        c->idx = lin(ms, 0, 1300, 260, 420);
+        break;
+#else
     case 0:                                     /* C, the frog: "rib-bit", a rattle */
         if (ms >= 340) return 0;
         e = syl(ms, 0, 110, 8, 20) + syl(ms, 150, 340, 8, 50);
@@ -224,6 +324,7 @@ static int animal_at(uint32_t kind, int32_t ms, acall_t *c)   /* the call at ms;
         c->f = ms < 200 ? lin(ms, 0, 140, 900, 1900) : lin(ms, 200, 400, 1000, 2300);
         c->idx = 260; peak = 9000;
         break;
+#endif
     }
     c->amp = (e * peak) >> 8;
     return 1;
@@ -451,8 +552,13 @@ static void drum_hit(uint32_t note, uint32_t src)
     }
     if (src == 0u) { drum_pc = (uint8_t)pc; drum_n++; drum_ms = fm1_ms; }   /* (0: S_LIVE) */
 }
+#ifdef DINO
+static const char *const ANIMAL_NAME[12] = {"T REX", "RAPTOR", "TRICERATOPS", "PTERANODON", "STEGOSAURUS", "ANKYLOSAUR",
+                                            "SPINOSAURUS", "IGUANODON", "GALLIMIMUS", "BABY DINO", "TROODON", "DIPLODOCUS"};
+#else
 static const char *const ANIMAL_NAME[12] = {"FROG", "CRICKET", "DUCK", "BEE", "BIRD", "COW", "DOG", "OWL", "SHEEP", "CAT",
                                             "CHICK", "CAPYBARA"};
+#endif
 static void animal_hit(uint32_t note, uint32_t src)   /* every octave the same twelve animals */
 {
     static uint32_t next;
@@ -1497,6 +1603,34 @@ static void draw_panel(const char *big, const char *small, uint16_t col)   /* tw
 
 /* ---- the capybara: she sits by the name, sings when notes sound, nods to the band, blinks, and gets a yuzu on
  * her head for a chord or a right answer. b body, d dark, e eye, n nose, m mouth, o yuzu, g its leaf */
+#ifdef DINO                                     /* the diplodocus, in the same places: w her belly; o g a berry and its leaf */
+static const char *const CAPY[20] = {
+    ".................g......",
+    "................ooo.....",
+    "...............ooooo....",
+    "................ooo.....",
+    "..............bbbbbb....",
+    ".............bbbbebbbb..",
+    ".............bbbbbbbbnb.",
+    ".............bbbbbmmmm..",
+    ".............bbbb.......",
+    ".............bbbb.......",
+    ".............bbbb.......",
+    "......bbbbbbbbbbbb......",
+    ".....bbbdbbbdbbbbbb.....",
+    "....bbbbbbdbbbwwwbb.....",
+    "b..bbbbbbbbbbwwwwwb.....",
+    "bbbbbbbbbbbbbwwwwwb.....",
+    ".dbbbbbbbbbbbbwwwb......",
+    "...bbbbbbbbbbbbbb.......",
+    "..bbb.bbb....bbb.bbb....",
+    "..ddd.ddd....ddd.ddd....",
+};
+#define CAPY_B RGB(110, 200, 90)
+#define CAPY_D RGB(48, 120, 60)
+#define CAPY_N RGB(30, 70, 40)
+#define C_YUZU RGB(235, 60, 50)                 /* (a berry) */
+#else
 static const char *const CAPY[20] = {
     ".................g......",
     "................ooo.....",
@@ -1519,6 +1653,13 @@ static const char *const CAPY[20] = {
     "..bbb.bbb....bbb.bbb....",
     "..ddd.ddd....ddd.ddd....",
 };
+#define CAPY_B RGB(176, 124, 72)
+#define CAPY_D RGB(104, 68, 40)
+#define CAPY_N RGB(60, 40, 30)
+#define C_YUZU RGB(255, 170, 30)
+#endif
+#define C_TITLE RGB(255, 170, 30)
+#define C_LEAF RGB(70, 190, 70)
 enum { CAPY_SING = 1, CAPY_BLINK = 2, CAPY_YUZU = 4, CAPY_UP = 8, CAPY_FLIP = 16, CAPY_STEP_A = 32, CAPY_STEP_B = 64 };   /* FLIP: she looks left; STEP: two feet off the ground */
 static void capy_px(int cv, int32_t x, int32_t y, int32_t s, uint16_t c)
 {
@@ -1537,10 +1678,10 @@ static void draw_capy(int cv, int32_t x, int32_t y, int32_t s, uint32_t f, uint3
             if ((ch == 'o' || ch == 'g') && !(f & CAPY_YUZU)) continue;
             if (r >= 18u && f & CAPY_STEP_A && ((c >= 2u && c <= 4u) || (c >= 17u && c <= 19u))) continue;
             if (r >= 18u && f & CAPY_STEP_B && ((c >= 6u && c <= 8u) || (c >= 13u && c <= 15u))) continue;
-            col = ch == 'b' ? RGB(176, 124, 72) : ch == 'd' ? RGB(104, 68, 40) : ch == 'n' ? RGB(60, 40, 30)
-                : ch == 'o' ? RGB(255, 170, 30) : ch == 'g' ? RGB(70, 190, 70)
-                : ch == 'e' ? (f & CAPY_BLINK ? RGB(104, 68, 40) : C_BLACK)
-                : f & CAPY_SING ? RGB(60, 20, 20) : RGB(104, 68, 40);          /* m: the mouth, open when she sings */
+            col = ch == 'b' ? CAPY_B : ch == 'd' ? CAPY_D : ch == 'n' ? CAPY_N : ch == 'w' ? RGB(205, 235, 150)
+                : ch == 'o' ? C_YUZU : ch == 'g' ? C_LEAF
+                : ch == 'e' ? (f & CAPY_BLINK ? CAPY_D : C_BLACK)
+                : f & CAPY_SING ? RGB(60, 20, 20) : CAPY_D;          /* m: the mouth, open when she sings */
             capy_px(cv, x + cx * s, y + (int32_t)r * s - (f & CAPY_UP ? s : 0), s, col);
             if (ch == 'm' && f & CAPY_SING) capy_px(cv, x + cx * s, y + (int32_t)(r + 1u) * s - (f & CAPY_UP ? s : 0), s, col);
         }
@@ -1548,6 +1689,162 @@ static void draw_capy(int cv, int32_t x, int32_t y, int32_t s, uint32_t f, uint3
 /* ---- the animals' pictures, 16 x 12, by the key's pitch class (the capybara is the one above). g G greens, w white,
  * k black, y yellow, o orange, b B browns, c light blue, e grey, p pink, r red */
 static const char *const ANIMAL_PIC[11][12] = {
+#ifdef DINO                                     /* (and t teal, v violet; the diplodocus is the one above) */
+    {   /* T rex */
+        "........ggggggg.",
+        ".......gggkggggg",
+        ".......ggggggggg",
+        ".......gggwkwkwk",
+        ".......gggggggg.",
+        "g......gggg.....",
+        "gg...ggggggGg...",
+        "ggg.ggggggg.G...",
+        ".ggggggggggg....",
+        "..ggggggggg.....",
+        "....ggg.ggg.....",
+        "....gGG.gGG.....",
+    },
+    {   /* raptor */
+        "............ooo.",
+        "...........ookoo",
+        "...........ooooo",
+        "...........oo.ww",
+        "y.........ooo...",
+        "yo......ooooo...",
+        ".ooBoBoooooo.o..",
+        "..oooooooooo.w..",
+        "....ooooooo.....",
+        ".....oo..oo.....",
+        ".....o....o.....",
+        "....ow...ow.....",
+    },
+    {   /* triceratops */
+        "................",
+        ".......ooo...w..",
+        "......ooooo.w...",
+        "......ooeoeew..w",
+        "......oeeeeeeew.",
+        ".eeeeeoeeekeeee.",
+        "eeeeeeeeeeeeeeyy",
+        "eeeeeeeeeeeeeey.",
+        "eeeeeeeeeeee....",
+        ".eeeeeeeeee.....",
+        ".ee.ee..ee.ee...",
+        ".ee.ee..ee.ee...",
+    },
+    {   /* pteranodon */
+        "bb...........r..",
+        "bbbb........rr..",
+        ".bbbbb.....vvv..",
+        "..bbbbbb..vvkvyy",
+        "...bbbbbbbvvvyyy",
+        "....bbbbvvvv....",
+        ".....bbvvvvv....",
+        "....bbbvvvv.....",
+        "...bbbb.vv......",
+        "..bbb...v.v.....",
+        ".bb.............",
+        "................",
+    },
+    {   /* stegosaurus */
+        "......o..o......",
+        "....o.oo.oo.o...",
+        "...ooooooooooo..",
+        "...ttttttttttt..",
+        "w.tttttttttttttt",
+        ".wttttttttttttkt",
+        "wttttttttttttttt",
+        ".w.tttttttttt...",
+        "...tttttttttt...",
+        "...tt.tt.tt.tt..",
+        "...tt.tt.tt.tt..",
+        "................",
+    },
+    {   /* ankylosaur */
+        "................",
+        "....w.w.w.w.w...",
+        "....BbBbBbBbB...",
+        "...bbbbbbbbbbb..",
+        "BB.bBbBbBbBbbbb.",
+        "BBBbbbbbbbbbbbkb",
+        "BB.bbbbbbbbbbbbb",
+        "...yyyyyyyyyyyy.",
+        "...bb.bb..bb.bb.",
+        "...bb.bb..bb.bb.",
+        "................",
+        "................",
+    },
+    {   /* spinosaurus */
+        ".....rrr........",
+        "...rrorrorr.....",
+        "..rrrorrorrr....",
+        "..rorrorrorr....",
+        "c.ccccccccc.cccc",
+        "cccccccccccckccc",
+        ".cccccccccccccww",
+        "..cccccccc.c....",
+        "...cccccc.......",
+        "....cc..cc......",
+        "....cc..cc......",
+        "...ccc.ccc......",
+    },
+    {   /* iguanodon */
+        "..........GGG...",
+        ".........GGkGG..",
+        ".........GGGGGyy",
+        ".........GGG....",
+        "G.......GGyy....",
+        "GG....GGGGyy.w..",
+        ".GGGGGGGGGyGGG..",
+        "..GGGGGGGyyG....",
+        "...GGGGGGGG.....",
+        ".....GG.GG......",
+        ".....GG.GG......",
+        "....GGG.GGG.....",
+    },
+    {   /* gallimimus */
+        "...........pp...",
+        "..........pkpyy.",
+        "..........pp....",
+        "..........pp....",
+        "p.........pp....",
+        "pp...pppppp.....",
+        ".pppppppppp.p...",
+        "..ppppppppp.....",
+        "....ppppp.......",
+        ".....e..e.......",
+        ".....e..e.......",
+        "....ee.ee.......",
+    },
+    {   /* the baby, out of its egg */
+        "......gggg......",
+        ".....gkggkg.....",
+        ".....gggggg.....",
+        "......gGGg......",
+        "..w..wggggw..w..",
+        "..wwwwwggwwwww..",
+        ".wwwwwwwwwwwwww.",
+        ".wwwwewwwwwwwww.",
+        ".wwwwwwwwewwwww.",
+        ".wwwwwwwwwwwwww.",
+        "..wwwwwwwwwwww..",
+        "....wwwwwwww....",
+    },
+    {   /* troodon */
+        "............vvv.",
+        "...........vwkvv",
+        "...........vvvvy",
+        "..........vvv...",
+        "c.........vv....",
+        "cv......vvvv....",
+        ".cvvvvvvvvvv.v..",
+        "..cvvvvvvvv.....",
+        "....vvvvvv......",
+        ".....v..v.......",
+        ".....v..v.......",
+        "....vv.vv.......",
+    },
+#else
     {   /* frog */
         "..ggg......ggg..",
         ".gwwwg....gwwwg.",
@@ -1702,6 +1999,7 @@ static const char *const ANIMAL_PIC[11][12] = {
         "...yyyyyyyyyy...",
         ".....oo..oo.....",
     },
+#endif
 };
 static void draw_animal(uint32_t pc, int32_t x, int32_t y)   /* into the canvas, 48 x 36 */
 {
@@ -1715,7 +2013,8 @@ static void draw_animal(uint32_t pc, int32_t x, int32_t y)   /* into the canvas,
                     ch == 'g' ? RGB(90, 200, 70) : ch == 'G' ? RGB(30, 110, 40) : ch == 'w' ? C_WHITE : ch == 'k' ? RGB(20, 20, 20)
                     : ch == 'y' ? RGB(255, 220, 60) : ch == 'o' ? RGB(255, 150, 30) : ch == 'b' ? RGB(176, 124, 72)
                     : ch == 'B' ? RGB(104, 68, 40) : ch == 'c' ? RGB(120, 200, 255) : ch == 'e' ? RGB(130, 130, 130)
-                    : ch == 'p' ? RGB(255, 170, 190) : RGB(230, 60, 60));
+                    : ch == 'p' ? RGB(255, 170, 190) : ch == 't' ? RGB(60, 190, 180) : ch == 'v' ? RGB(180, 120, 240)
+                    : RGB(230, 60, 60));
         }
 }
 static void draw_top(const char *name, uint16_t col, uint32_t f)   /* the instrument or the game, and the capybara */
@@ -1746,8 +2045,6 @@ static const int16_t SPOT[5][2] = {{128, 104}, {96, 170}, {182, 110}, {150, 184}
 #define C_GRASS RGB(24, 70, 34)
 #define C_WATER RGB(40, 120, 200)
 #define C_RIPPLE RGB(110, 190, 240)
-#define C_YUZU RGB(255, 170, 30)
-#define C_LEAF RGB(70, 190, 70)
 enum { SC_CALM, SC_SPLASH, SC_RIDE, SC_WREN, SC_NAP, SC_BATH, NSCENE };
 static const uint16_t SC_MS[NSCENE] = {5000, 9000, 8000, 8000, 8000, 9000};
 #define BATH_SINK 7400                          /* the bath: its yuzus begin to go under (the last is gone as the scene ends) */
@@ -1782,10 +2079,21 @@ static void drops(int32_t x, int32_t y, int32_t t, int32_t t0, int32_t n, int32_
         cv_rect(x + (2 * i - n + 1) * spread * u / 700 / n, y - arc(up + i % 3 * 6, u, 0, 700), 3, 3, C_RIPPLE);
 }
 /* the wren: t tail, w wing, h head, b back, c belly, e eye, y beak, l legs. [0] the wing up, [1] down */
+#ifdef DINO                                     /* (a small pterosaur: t its crest) */
+static const char *const BIRD[2][6] = {
+    {"..w.t...", ".ww.heyy", "wwbbbb..", ".bbcc...", "..bc....", "..l.l..."},
+    {"....t...", "....heyy", ".bbbbb..", "wwwcc...", ".wwc....", "..l.l..."},
+};
+#define BIRD_COL(ch) (ch == 'c' ? RGB(240, 215, 170) : ch == 'e' ? C_BLACK : ch == 'y' ? RGB(245, 195, 60) \
+                      : ch == 't' ? RGB(230, 60, 60) : ch == 'l' || ch == 'w' ? RGB(150, 80, 150) : RGB(200, 130, 210))
+#else
 static const char *const BIRD[2][6] = {
     {"t...hh..", "tw.hheyy", ".bbbbb..", ".bbccc..", "..bcc...", "...l.l.."},
     {"t...hh..", "t..hheyy", ".bbbbb..", "wwbccc..", "..bcc...", "...l.l.."},
 };
+#define BIRD_COL(ch) (ch == 'c' ? RGB(235, 205, 165) : ch == 'e' ? C_BLACK : ch == 'y' ? RGB(245, 195, 60) \
+                      : ch == 'l' || ch == 'w' || ch == 't' ? RGB(100, 62, 34) : RGB(160, 104, 58))
+#endif
 static void bird_at(int32_t x, int32_t y, uint32_t wing, int flip)
 {
     int32_t r, c;
@@ -1793,9 +2101,7 @@ static void bird_at(int32_t x, int32_t y, uint32_t wing, int flip)
         for (c = 0; c < 8; c++) {
             char ch = BIRD[wing & 1u][r][c];
             if (ch == '.') continue;
-            cv_rect(x + (flip ? 7 - c : c) * 3, y + r * 3, 3, 3,
-                    ch == 'c' ? RGB(235, 205, 165) : ch == 'e' ? C_BLACK : ch == 'y' ? RGB(245, 195, 60)
-                    : ch == 'l' || ch == 'w' || ch == 't' ? RGB(100, 62, 34) : RGB(160, 104, 58));
+            cv_rect(x + (flip ? 7 - c : c) * 3, y + r * 3, 3, 3, BIRD_COL(ch));
         }
 }
 static void note_at(int32_t x, int32_t y)       /* a little note, as she sings */
@@ -1817,6 +2123,14 @@ static void pond_scene(uint32_t sc, int32_t t, uint32_t now, uint32_t n)   /* th
             while ((w + 1) * (w + 1) <= q) w++;     /* sqrt(30^2 - dy^2) */
             pw[dy + 30] = (uint8_t)(w * 108 / 30);
         }
+#ifdef DINO                                     /* far off, a volcano: it glows, and smokes a little */
+    for (dy = 0; dy < 46; dy++) cv_rect(204 - 6 - dy * 40 / 46, 92 + dy, 12 + 2 * (dy * 40 / 46), 1, RGB(58, 46, 66));
+    cv_rect(198, 92, 12, 3, now / 400u & 1u ? RGB(255, 120, 40) : RGB(255, 80, 30));
+    for (k = 0; k < 3; k++) {
+        uint32_t u = (now + (uint32_t)k * 1300u) % 3900u;
+        cv_rect(201 + wave(now + (uint32_t)k * 500u, 2600, 3) + (int32_t)u / 400, 86 - (int32_t)u * 22 / 3900, 5, 5, RGB(88, 84, 96));
+    }
+#endif
     cv_rect(0, 138, 240, 102, C_GRASS);
     for (dy = -30; dy <= 30; dy++)              /* the pond, its ripples drifting */
         cv_rect(120 - pw[dy + 30], 196 + dy, 2 * pw[dy + 30], 1,
@@ -1961,7 +2275,7 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
     else if (been) scene = (uint8_t)((scene + 1u) % NSCENE);
     been = 1;
     lcd_fill(0, 0, 240, 240, C_BLACK);
-    draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
+    draw_text_box(0, 8, 240, &FONT_L, title, C_TITLE, 1);
     if (title[1] == 'E') draw_text_box(0, 42, 240, &FONT_S, APP_NAME " " APP_VER, C_GREY, 1);   /* (hello: which build this is) */
     for (i = 0; i < 4u; i++) (void)fm1_enc_take(POND_ENC[i]);   /* (turns from before the pond don't close it) */
     (void)fm1_enc_take(ENC_PRESETS); (void)fm1_enc_take(ENC_SELECT); (void)fm1_enc_take(ENC_ALGORITHM);
@@ -1970,7 +2284,7 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
         int32_t turned = 0, e;
         platform_poll();
         if (!(fm1_in.buttons & 1u << BTN_HOME)) {
-            if (home_did) draw_text_box(0, 8, 240, &FONT_L, title, C_YUZU, 1);
+            if (home_did) draw_text_box(0, 8, 240, &FONT_L, title, C_TITLE, 1);
             home_at = home_did = 0;
         } else if (!home_at) home_at = fm1_ms | 1u;
         else if (!home_did && fm1_ms - home_at > 3000u) {       /* held 3 s, here as anywhere: half the loudness */
@@ -1978,7 +2292,7 @@ static void pond_show(const char *title)        /* the pond, until a key, a knob
             g_quiet = !g_quiet;
             set.quiet = g_quiet;
             set_dirty = 1;
-            draw_text_box(0, 8, 240, &FONT_L, g_quiet ? "QUIET ON" : "QUIET OFF", C_YUZU, 1);
+            draw_text_box(0, 8, 240, &FONT_L, g_quiet ? "QUIET ON" : "QUIET OFF", C_TITLE, 1);
         }
         if ((e = fm1_enc_take(ENC_PRESETS)) != 0) pond_presets += e, turned = 1;
         for (i = 0; i < 4u; i++)

@@ -45,6 +45,7 @@ jobs:
           BOARD=smk37 sh build.sh
           BOARD=smk37 MODEL=elite sh build.sh
           BOARD=smk37 MODEL=mke sh build.sh
+          sh build.sh --theme dino
           sh build.sh
 
       - name: Host tests
@@ -57,21 +58,26 @@ jobs:
           BOARD=smk37 sh build.sh --release "$V"
           BOARD=smk37 MODEL=elite sh build.sh --release "$V"
           BOARD=smk37 MODEL=mke sh build.sh --release "$V"
+          sh build.sh --theme dino --release "$V"
           sh build.sh --release "$V"
-          ls -l build/capy-"$V"*.fwsc
-          (cd build && sha256sum capy-"$V"*.fwsc > SHA256SUMS)
+          ls -l build/capy-"$V"*.fwsc build/dino-"$V"*.fwsc
+          (cd build && sha256sum capy-"$V"*.fwsc dino-"$V"*.fwsc > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
           name: capy-fwsc
-          path: build/capy*.fwsc
+          path: |
+            build/capy*.fwsc
+            build/dino*.fwsc
           if-no-files-found: error
 
       - name: Attest the packages (tags only)
         if: github.ref_type == 'tag'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: build/capy-[0-9]*.fwsc
+          subject-path: |
+            build/capy-[0-9]*.fwsc
+            build/dino-[0-9]*.fwsc
 
       # (the release builds only, not the dev ones: capy-smk37.fwsc – no comment inside the block below: it would be part of the pattern)
       - name: Release (tags only)
@@ -80,5 +86,6 @@ jobs:
         with:
           files: |
             build/capy-[0-9]*.fwsc
+            build/dino-[0-9]*.fwsc
             build/SHA256SUMS
           generate_release_notes: true

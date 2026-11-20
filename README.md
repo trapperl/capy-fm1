@@ -111,6 +111,27 @@ metronome click on and off, and **HOME** leaves. The instruments, the knobs and 
 | **GUESS IT** | It plays one note without lighting its key. The keys it could be are green; the child plays the one it was. After two wrong keys only the right one stays lit. | Two keys to choose from (C and G), then three, five, seven, and the eight from C to C. |
 | **DRUM IT** | The keys become the drum kit. It plays a beat on the kick (C) and the snare (D), shown as boxes on the screen, to be played back on those keys. After two tries each drum's key lights as its turn comes. | From three slow hits on two drums to six quick ones on three, with the clap (E). |
 
+## Dino: the same instrument with dinosaurs
+
+`dino.fwsc`, beside `capy.fwsc`, is the same firmware with dinosaurs. The instruments, the band, the recorder and
+the nine games are the same. What differs is what is drawn and what the twelve calls are:
+
+- A diplodocus and her baby sit beside the instrument's name, and get a berry for a chord or a right answer.
+- DINOS takes the place of ANIMALS: C T rex, D triceratops, E stegosaurus, F ankylosaur, G iguanodon, A a baby in
+  its egg, B diplodocus; on the black keys a raptor, a pteranodon, a spinosaurus, a gallimimus and a troodon.
+  Nobody has heard a dinosaur, so each call is made up.
+- The home screen is their pond, with a volcano behind it. A small pterosaur lands where the wren does.
+
+<p>
+<img src="docs/dino-hello.png" width="160" alt="Dino's pond: a small pterosaur sings on the diplodocus's back, a volcano smokes behind">
+<img src="docs/dino-trex.png" width="160" alt="DINOS: the key C is the T REX">
+<img src="docs/dino-iguanodon.png" width="160" alt="DINOS: the key G is the IGUANODON">
+<img src="docs/dino-find.png" width="160" alt="FIND IT, with the diplodocus beside the name">
+</p>
+
+Install it the same way, with `dino.fwsc` in place of `capy.fwsc`. The two share what they save, so the games'
+levels and the four songs are kept when one is installed over the other.
+
 ## Changing Capy
 
 Capy is open source. The whole instrument is one C file, [firmware/src/capy.c](firmware/src/capy.c), built on

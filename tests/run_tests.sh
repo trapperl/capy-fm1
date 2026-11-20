@@ -25,6 +25,9 @@ run "Capy: the games (tests/scripts/games.txt)" sh tests/run_host.sh tests/scrip
 run "Capy: the twelve animals (tests/scripts/animals.txt)" sh tests/run_host.sh tests/scripts/animals.txt
 run "Capy: GUESS IT and DRUM IT (tests/scripts/newgames.txt)" sh tests/run_host.sh tests/scripts/newgames.txt
 run "Capy: every game played to its top level, and random sessions (tests/run_bot.sh)" sh tests/run_bot.sh
+run "Dino: the twelve dinosaurs (tests/scripts/animals.txt)" env THEME=dino sh tests/run_host.sh tests/scripts/animals.txt
+run "Dino: a tour of every button and knob (tests/scripts/tour.txt)" env THEME=dino sh tests/run_host.sh tests/scripts/tour.txt
+run "Dino: every game played to its top level, and random sessions (tests/run_bot.sh)" env THEME=dino sh tests/run_bot.sh
 run "FM-1 MIDI: USB, the TRS jack, a clock, the channel" sh tests/run_host.sh tests/scripts/midi.txt
 run "SMK-37: velocity, a pad, an outer key, the pitch wheel" env BOARD=smk37 sh tests/run_host.sh tests/scripts/smk37.txt
 

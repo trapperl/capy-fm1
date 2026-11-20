@@ -21,6 +21,10 @@ git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
 ./build.sh
 ```
 
+`./build.sh --theme dino` builds the dinosaurs instead, as `build/dino.fwsc`: the same `capy.c` compiled with
+`-DDINO=1`, which swaps the pictures and the twelve calls and nothing else. `THEME=dino` in front of the two test
+tools below runs them on that build.
+
 The result is `build/capy.fwsc`. Install it as the README describes, with `build/capy.fwsc` in place of
 `capy.fwsc`. The `capy.fwsc` at the top of the repository is the package built from the code beside it.
 

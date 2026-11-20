@@ -2,6 +2,8 @@
 
 For the grown-up who hands it over. The child needs none of this.
 
+All of it holds for Dino (`dino.fwsc`) too: read diplodocus for capybara, DINOS for ANIMALS and berry for yuzu.
+
 ## Install
 
 Installing firmware is at your own risk. So far Capy has been installed on one FM-1, from Windows, over another

@@ -9,7 +9,8 @@ cd "$(dirname "$0")/.."
 mkdir -p build/host/bot
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-cc -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -Wall -Wno-unused-function -DDINGHY_HOST -DAPP_VER='"bot"' -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/bot/bot tests/bot.c
+D=; [ "${THEME:-capy}" = dino ] && D=-DDINO=1    # (THEME=dino: the dinosaurs)
+cc -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=undefined -Wall -Wno-unused-function -DDINGHY_HOST -DAPP_VER='"bot"' $D -Ifirmware/hal -Ifirmware/src -Ifirmware/gen -o build/host/bot/bot tests/bot.c
 bad=0
 for g in 0 1 2 3 4 5 6 7 8; do
     s=build/host/bot/g$g.txt
